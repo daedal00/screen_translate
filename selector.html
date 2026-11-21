@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Select region</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; cursor: crosshair; user-select: none; background: #000 center / 100% 100% no-repeat; }
+      #dim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); }
+      #box { position: fixed; display: none; border: 1px solid #fff; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.4); }
+    </style>
+    <script type="module" src="/src/selector.ts" defer></script>
+  </head>
+  <body>
+    <div id="dim"></div>
+    <div id="box"></div>
+  </body>
+</html>

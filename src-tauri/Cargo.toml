@@ -1,0 +1,62 @@
+[package]
+name = "screen-translate"
+version = "0.1.0"
+description = "Screen region OCR + translation"
+authors = ["samuel"]
+license = "MIT"
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "screen_translate_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "macos-private-api"] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-log = "2"
+log = "0.4"
+xcap = { version = "0.9.10", default-features = false }
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+serde = { version = "1.0.229", features = ["derive"] }
+tauri-plugin-store = "2"
+keyring = { version = "3", features = ["apple-native", "windows-native"] }
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json"] }
+serde_json = "1"
+
+
+# Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6.5"
+objc2-app-kit = { version = "0.3.2", features = ["NSWindow", "NSResponder", "NSGraphics"] }
+objc2-core-graphics = "0.3.2"
+objc2-foundation = "0.3.2"
+objc2-vision = "0.3.2"
+
+[target."cfg(windows)".dependencies]
+windows = { version = "0.62.2", features = ["Media_Ocr", "Graphics_Imaging", "Storage_Streams", "Foundation", "Foundation_Collections", "Globalization", "Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+wiremock = "0.6"
+serde_json = "1"
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.dev]
+opt-level = 1

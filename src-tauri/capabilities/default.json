@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the settings window (app commands are not gated)",
+  "windows": ["settings"],
+  "permissions": []
+}

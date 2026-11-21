@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings</title>
+    <style>
+      body { font: 14px system-ui, sans-serif; margin: 20px; }
+      label { display: block; margin: 14px 0 4px; font-weight: 600; }
+      input, select { width: 100%; box-sizing: border-box; padding: 6px; font: inherit; }
+      button { margin-top: 18px; padding: 6px 16px; font: inherit; }
+      #status { margin-top: 12px; min-height: 1.2em; }
+      [hidden] { display: none; }
+      .hint { margin-top: 4px; font-size: 12px; color: #666; }
+    </style>
+    <script type="module" src="/src/settings.ts" defer></script>
+  </head>
+  <body>
+    <label for="provider">Translation provider</label>
+    <select id="provider">
+      <option value="deepl">DeepL (needs API key)</option>
+      <option value="local">Local model (llama.cpp)</option>
+    </select>
+    <div id="deepl-fields">
+      <label for="key">DeepL API key</label>
+      <input id="key" type="password" autocomplete="off" />
+      <div class="hint">Get a free key at https://www.deepl.com/pro-api</div>
+    </div>
+    <div id="local-fields" hidden>
+      <label for="url">Server URL</label>
+      <input id="url" type="text" autocomplete="off" spellcheck="false" value="http://127.0.0.1:8080" />
+      <label for="model">Model (optional)</label>
+      <input id="model" type="text" autocomplete="off" spellcheck="false" placeholder="leave empty for llama-server" />
+      <div class="hint" id="remote-hint" hidden>Screen text will be sent to this server.</div>
+      <div class="hint">brew install llama.cpp, then run llama-server -hf Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M</div>
+    </div>
+    <label for="lang">Translate into</label>
+    <select id="lang">
+      <option value="EN-US">English (US)</option>
+      <option value="EN-GB">English (UK)</option>
+      <option value="DE">German</option>
+      <option value="FR">French</option>
+      <option value="ES">Spanish</option>
+      <option value="IT">Italian</option>
+      <option value="PT-BR">Portuguese (BR)</option>
+      <option value="JA">Japanese</option>
+      <option value="KO">Korean</option>
+      <option value="ZH-HANS">Chinese (Simplified)</option>
+    </select>
+    <button id="save">Save</button>
+    <button id="remove">Remove key</button>
+    <div id="status"></div>
+  </body>
+</html>

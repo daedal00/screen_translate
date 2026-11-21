@@ -1,5 +1,5 @@
 pub mod deepl;
-pub mod ollama;
+pub mod local;
 
 use std::collections::VecDeque;
 

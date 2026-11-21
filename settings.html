@@ -19,17 +19,20 @@
     <label for="provider">Translation provider</label>
     <select id="provider">
       <option value="deepl">DeepL (needs API key)</option>
-      <option value="ollama">Ollama (free, offline)</option>
+      <option value="local">Local model (llama.cpp)</option>
     </select>
     <div id="deepl-fields">
       <label for="key">DeepL API key</label>
       <input id="key" type="password" autocomplete="off" />
       <div class="hint">Get a free key at https://www.deepl.com/pro-api</div>
     </div>
-    <div id="ollama-fields" hidden>
-      <label for="model">Ollama model</label>
-      <input id="model" type="text" autocomplete="off" spellcheck="false" />
-      <div class="hint">Install Ollama, then run `ollama pull qwen2.5:7b`</div>
+    <div id="local-fields" hidden>
+      <label for="url">Server URL</label>
+      <input id="url" type="text" autocomplete="off" spellcheck="false" value="http://127.0.0.1:8080" />
+      <label for="model">Model (optional)</label>
+      <input id="model" type="text" autocomplete="off" spellcheck="false" placeholder="leave empty for llama-server" />
+      <div class="hint" id="remote-hint" hidden>Screen text will be sent to this server.</div>
+      <div class="hint">brew install llama.cpp, then run llama-server -hf Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M</div>
     </div>
     <label for="lang">Translate into</label>
     <select id="lang">

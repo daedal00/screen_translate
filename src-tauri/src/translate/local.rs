@@ -4,8 +4,7 @@ use serde::Deserialize;
 
 use super::Translation;
 
-pub const DEFAULT_BASE: &str = "http://127.0.0.1:11434";
-pub const DEFAULT_MODEL: &str = "qwen2.5:7b";
+pub const DEFAULT_BASE: &str = "http://127.0.0.1:8080";
 
 /// Local models are slower than DeepL, so the total timeout is longer; the server is local, so connect is short.
 pub fn http_client() -> reqwest::Client {
@@ -34,7 +33,7 @@ pub fn language_name(target: &str) -> &'static str {
 
 const LABELS: &[&str] = &["translation:", "here is the translation:"];
 const QUOTES: &[(char, char)] = &[('"', '"'), ('“', '”'), ('「', '」')];
-const TIMED_OUT: &str = "Ollama request timed out (the first request loads the model, so try again)";
+const TIMED_OUT: &str = "Local model request timed out (the first request may be slow while the model loads, so try again)";
 
 fn strip_prefix_ci<'a>(s: &'a str, prefix: &str) -> Option<&'a str> {
     let head = s.get(..prefix.len())?;
@@ -79,7 +78,7 @@ pub fn clean(source: &str, output: &str) -> String {
     s.to_owned()
 }
 
-pub struct Ollama {
+pub struct Local {
     base: String,
     model: String,
     client: reqwest::Client,
@@ -87,15 +86,73 @@ pub struct Ollama {
 
 #[derive(Deserialize)]
 struct ErrorBody {
-    error: Option<String>,
+    error: Option<ErrorValue>,
+}
+
+/// OpenAI-style `{"message": ".."}` or a plain string.
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum ErrorValue {
+    Text(String),
+    Object { message: Option<String> },
 }
 
 #[derive(Deserialize)]
 struct Response {
-    response: String,
+    choices: Vec<Choice>,
 }
 
-impl Ollama {
+#[derive(Deserialize)]
+struct Choice {
+    message: Message,
+}
+
+#[derive(Deserialize)]
+struct Message {
+    content: Option<Content>,
+}
+
+/// A string, or an array of `{type:"text", text}` parts.
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum Content {
+    Text(String),
+    Parts(Vec<Part>),
+}
+
+#[derive(Deserialize)]
+struct Part {
+    text: Option<String>,
+}
+
+impl Content {
+    fn into_text(self) -> String {
+        match self {
+            Content::Text(t) => t,
+            Content::Parts(p) => p.into_iter().filter_map(|p| p.text).collect(),
+        }
+    }
+}
+
+/// `base` with any `user:pass@` userinfo removed, for error messages.
+fn redact(base: &str) -> String {
+    match reqwest::Url::parse(base) {
+        Ok(mut u) => {
+            let _ = u.set_username("");
+            let _ = u.set_password(None);
+            u.as_str().trim_end_matches('/').to_string()
+        }
+        Err(_) => "the configured URL".into(),
+    }
+}
+
+/// `base` without trailing slashes or a trailing `/v1`.
+fn endpoint(base: &str) -> String {
+    let b = base.trim_end_matches('/');
+    format!("{}/v1/chat/completions", b.strip_suffix("/v1").unwrap_or(b))
+}
+
+impl Local {
     pub fn new(base: String, model: String, client: reqwest::Client) -> Self {
         Self { base, model, client }
     }
@@ -111,46 +168,55 @@ impl Ollama {
             language_name(target),
             language_name(target)
         );
+        let mut body = serde_json::json!({
+            "messages": [
+                { "role": "system", "content": system },
+                { "role": "user", "content": format!("<text>\n{text}\n</text>") },
+            ],
+            "temperature": 0,
+            "stream": false,
+        });
+        if !self.model.is_empty() {
+            body["model"] = self.model.clone().into();
+        }
         let resp = self
             .client
-            .post(format!("{}/api/generate", self.base))
-            .json(&serde_json::json!({
-                "model": self.model,
-                "system": system,
-                "prompt": format!("<text>\n{text}\n</text>"),
-                "stream": false,
-                "options": { "temperature": 0 },
-            }))
+            .post(endpoint(&self.base))
+            .json(&body)
             .send()
             .await
             .map_err(|e| {
                 if e.is_timeout() {
                     TIMED_OUT.to_string()
                 } else if e.is_connect() {
-                    "Ollama is not running. Start it (open the Ollama app or run `ollama serve`).".to_string()
+                    format!("Local model server is not running at {}. Start llama-server (see README).", redact(&self.base))
                 } else {
-                    format!("Ollama request failed: {}", e.without_url())
+                    format!("Local model request failed: {}", e.without_url())
                 }
             })?;
         let status = resp.status();
-        if status.as_u16() == 404 {
-            return Err(format!("Ollama model {:?} not found. Run `ollama pull {}`.", self.model, self.model));
-        }
         if !status.is_success() {
-            let detail = resp.json::<ErrorBody>().await.ok().and_then(|b| b.error).unwrap_or_default();
+            let detail = match resp.json::<ErrorBody>().await.ok().and_then(|b| b.error) {
+                Some(ErrorValue::Text(t)) => t,
+                Some(ErrorValue::Object { message }) => message.unwrap_or_default(),
+                None => String::new(),
+            };
             let detail: String = detail.chars().take(200).collect();
-            return Err(if detail.is_empty() {
-                format!("Ollama returned HTTP {}", status.as_u16())
+            return Err(if detail.is_empty() && status.as_u16() == 404 {
+                "Local model server returned 404 for /v1/chat/completions. Check the server URL in Settings.".to_string()
+            } else if detail.is_empty() {
+                format!("Local model server returned HTTP {}", status.as_u16())
             } else {
-                format!("Ollama returned HTTP {}: {detail}", status.as_u16())
+                format!("Local model server returned HTTP {}: {detail}", status.as_u16())
             });
         }
         let body: Response = resp.json().await.map_err(|e| {
-            if e.is_timeout() { TIMED_OUT.to_string() } else { format!("bad Ollama response: {}", e.without_url()) }
+            if e.is_timeout() { TIMED_OUT.to_string() } else { format!("bad local model response: {}", e.without_url()) }
         })?;
-        let text = clean(text, &body.response);
+        let content = body.choices.into_iter().next().and_then(|c| c.message.content).map(Content::into_text).unwrap_or_default();
+        let text = clean(text, &content);
         if text.is_empty() {
-            return Err("Ollama returned no translation".into());
+            return Err("Local model returned no translation".into());
         }
         Ok(Translation { text, detected_source: None })
     }

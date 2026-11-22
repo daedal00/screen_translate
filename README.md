@@ -44,33 +44,67 @@ The transparent selector needs Tauri's `macOSPrivateApi`, which makes the app in
 
 ## Local model mode
 
-Pick "Local model" as the provider in Settings to translate with a local model instead of DeepL (no account or API key). It talks to any OpenAI-compatible server; the default is [llama.cpp](https://github.com/ggml-org/llama.cpp):
+Translate with a model running on your own computer instead of DeepL: no account, no API key, and the captured text never leaves your machine. The app talks to [llama.cpp](https://github.com/ggml-org/llama.cpp)'s `llama-server` (any OpenAI-compatible server works). Local models are slower than DeepL, and you need a few GB of free disk and memory.
+
+### 1. Install llama.cpp
+
+**macOS** (Apple Silicon recommended; uses the GPU automatically), with [Homebrew](https://brew.sh):
 
 ```sh
 brew install llama.cpp
-llama-server -hf Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M
 ```
 
-Leave Server URL at `http://127.0.0.1:8080` (without `/v1`; a trailing `/v1` is also accepted) and Model empty (llama-server uses the model it loaded). Ollama also works: set the URL to `http://127.0.0.1:11434` and enter a model name such as `qwen2.5:7b`. Local models are slower than DeepL; the first request after startup may be slow.
+**Windows 10/11**, in PowerShell:
 
-### Recommended models
+```powershell
+winget install llama.cpp
+```
 
-Pick the largest model that fits in your GPU's memory (VRAM), or in unified memory on Apple Silicon. Bigger models translate more naturally, especially Japanese, Chinese and Korean. All of these are Qwen 2.5 Instruct (strong at CJK) at Q4_K_M quantization; swap the `-hf` value in the command above:
+Close and reopen PowerShell afterwards so `llama-server` is on your PATH. For the best speed on an **NVIDIA** GPU, download the CUDA build from the [llama.cpp releases page](https://github.com/ggml-org/llama.cpp/releases) instead: get `llama-<version>-bin-win-cuda-<cuda version>-x64.zip` and the matching `cudart-llama-bin-win-cuda-<cuda version>-x64.zip`, unzip both into the same folder (for example `C:\llama.cpp`), and run `.\llama-server.exe` from that folder in the commands below. AMD and Intel GPUs: use the `vulkan` zip the same way.
 
-| GPU memory | Model (`-hf` value) | Download | Notes |
+Check it worked: `llama-server --version` prints a version.
+
+### 2. Pick a model
+
+Pick the largest model that fits in your GPU's memory (VRAM), or in unified memory on a Mac (leave room for your other apps). Bigger models translate more naturally, especially Japanese, Chinese and Korean. All of these are Qwen 2.5 Instruct (strong at CJK) at Q4_K_M quantization:
+
+| GPU / Mac memory | Model (`-hf` value) | Download | Notes |
 |---|---|---|---|
 | 4 GB | `Qwen/Qwen2.5-3B-Instruct-GGUF:Q4_K_M` | ~2 GB | Fast, rougher translations |
-| 8 GB (or 16 GB Mac) | `Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M` | ~4.7 GB | Default; good balance |
-| 12-16 GB | `Qwen/Qwen2.5-14B-Instruct-GGUF:Q4_K_M` | ~9 GB | Noticeably more natural |
-| 24 GB+ | `Qwen/Qwen2.5-32B-Instruct-GGUF:Q4_K_M` | ~20 GB | Best quality, slower |
+| 8 GB (or 16 GB Mac) | `Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M` | ~4.7 GB | Recommended starting point |
+| 12-16 GB (or 32 GB Mac) | `Qwen/Qwen2.5-14B-Instruct-GGUF:Q4_K_M` | ~9 GB | Noticeably more natural |
+| 24 GB+ (or 64 GB Mac) | `Qwen/Qwen2.5-32B-Instruct-GGUF:Q4_K_M` | ~20 GB | Best quality, slower |
 
-On Windows with an NVIDIA GPU, download the CUDA build of llama.cpp from its [releases page](https://github.com/ggml-org/llama.cpp/releases) (or the Vulkan build for AMD/Intel GPUs) and run the same command with `-ngl 99` to put the whole model on the GPU, for example:
+Avoid reasoning models (Qwen3, DeepSeek-R1): they think before answering, which adds seconds per translation.
+
+### 3. Download and load the model
+
+Start the server with the model you picked (same command on macOS and Windows):
 
 ```sh
-llama-server -hf Qwen/Qwen2.5-14B-Instruct-GGUF:Q4_K_M -ngl 99
+llama-server -hf Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M -c 4096
 ```
 
-Avoid reasoning models (Qwen3, DeepSeek-R1) for this app: they think before answering, which adds seconds per translation.
+- The first run downloads the model from Hugging Face (several GB; progress shows in the terminal) and caches it, in `~/.cache/huggingface/hub` on macOS or `%USERPROFILE%\.cache\huggingface\hub` on Windows. Later runs load it from the cache in seconds.
+- `-c 4096` keeps memory use low; translations are short, so a bigger context isn't needed.
+- It's ready when the terminal prints `listening on http://127.0.0.1:8080`. Opening that address in a browser shows llama.cpp's chat page, a quick way to check the model works.
+- **Keep this terminal open** while you use Screen Translate. Press `Ctrl+C` to stop the server, and run the same command again next time.
+- To switch models, stop the server and start it with a different `-hf` value. To use a `.gguf` file you downloaded yourself, run `llama-server -m path\to\model.gguf -c 4096` instead.
+
+### 4. Point Screen Translate at it
+
+1. Open **Settings** from the tray icon.
+2. Set **Provider** to **Local model (llama.cpp)**.
+3. Leave **Server URL** at `http://127.0.0.1:8080` and **Model** empty (llama-server uses the model it loaded).
+4. Save, then translate a region as usual. The first translation after the server starts can take several seconds while the model warms up.
+
+**Ollama** also works: set the URL to `http://127.0.0.1:11434` and enter a model name such as `qwen2.5:7b`.
+
+### Troubleshooting
+
+- **"Local model server is not running"**: llama-server isn't started, or is still loading. Check its terminal for the `listening` line.
+- **Very slow translations**: the model doesn't fit in GPU memory. Pick a smaller one from the table. On Windows, make sure you use the CUDA or Vulkan build, not a CPU-only one.
+- **Port 8080 already in use**: start the server with `--port 8081` and set the Server URL to `http://127.0.0.1:8081`.
 
 If you point the URL at a non-local server, the text you capture is sent to that server; Settings shows a warning in that case.
 

@@ -108,3 +108,14 @@ fn model_path_is_not_checked_against_other_dirs() {
     std::fs::write(a.path().join("m.gguf"), "x").unwrap();
     assert!(model_path(Path::new(b.path()), "m.gguf").is_err());
 }
+
+#[test]
+fn is_managed_url_ignores_trailing_slash_and_v1() {
+    use screen_translate_lib::manager::is_managed_url;
+    for url in ["http://127.0.0.1:18080", "http://127.0.0.1:18080/", "http://127.0.0.1:18080/v1", "http://127.0.0.1:18080/v1/", " http://127.0.0.1:18080 "] {
+        assert!(is_managed_url(url), "{url}");
+    }
+    for url in ["http://127.0.0.1:8080", "http://localhost:18080", "http://127.0.0.1:18080/api", ""] {
+        assert!(!is_managed_url(url), "{url}");
+    }
+}

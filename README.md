@@ -53,6 +53,17 @@ Pick "Local model" as the provider in Settings to translate with a local model i
 5. Click **Use** next to an installed model. When it is ready, the status shows how much of the model runs on the GPU, and the Server URL is filled in for you.
 6. Optionally tick "Start the server when the app launches".
 
+#### Recommended models
+
+| Model | Size | Best for | Hardware |
+|---|---|---|---|
+| Gemma 4 12B (QAT) | 7.0 GB | Top translation quality | Macs with 16 GB, GPUs with 10 GB or more |
+| Hy-MT2 7B | 4.6 GB | Translation-tuned, best for 8 GB GPUs | 8 GB GPUs, Macs with 16 GB |
+| Hy-MT2 1.8B | 1.1 GB | Very fast, close to the 7B quality | Any GPU, or CPU only |
+| Qwen3 8B | 5.0 GB | General-purpose, standard open license | 8 GB GPUs, Macs with 16 GB |
+
+Chosen by the benchmark in [`bench/`](bench/) (COMET on FLORES-200 and screen-style text, Japanese, Korean, French, German and Spanish to English). Quality numbers should transfer to other machines; speed will not (it was measured on an M1 Pro with 16 GB). The Hy-MT2 models use Tencent's license, so check its territory terms before relying on them.
+
 Large downloads use several connections in parallel and are verified with SHA-256 when Hugging Face publishes a checksum.
 
 Files live in the app data directory: `~/Library/Application Support/com.screentranslate.app/` on macOS and `%APPDATA%\com.screentranslate.app\` on Windows, in `llama/` (the runtime) and `models/`. The managed server listens only on `127.0.0.1:18080`. Port 18080 is reserved for it, so don't run your own server there. Local models are slower than DeepL; the first request after startup may be slow.

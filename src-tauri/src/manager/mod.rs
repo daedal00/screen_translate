@@ -46,10 +46,14 @@ pub fn model_path(models_dir: &Path, file: &str) -> Result<PathBuf, String> {
 pub const MANAGED_LOADING: &str = "The local model is still loading. Try again in a moment.";
 pub const MANAGED_STOPPED: &str = "The local model server is not running. Start it in Settings.";
 
-pub fn managed_not_ready(local_url: &str, status: &server::Status) -> Option<&'static str> {
+/// True when `local_url` is `server::base_url()`, ignoring surrounding spaces, trailing `/` and a trailing `/v1`.
+pub fn is_managed_url(local_url: &str) -> bool {
     let url = local_url.trim().trim_end_matches('/');
-    let url = url.strip_suffix("/v1").unwrap_or(url).trim_end_matches('/');
-    if url != server::base_url() {
+    url.strip_suffix("/v1").unwrap_or(url).trim_end_matches('/') == server::base_url()
+}
+
+pub fn managed_not_ready(local_url: &str, status: &server::Status) -> Option<&'static str> {
+    if !is_managed_url(local_url) {
         return None;
     }
     match status {
@@ -426,7 +430,9 @@ pub fn start(app: &AppHandle, file: &str) -> Result<(), String> {
     let exe = find_runtime(app).ok_or("Install llama.cpp first")?;
     let path = model_path(&models::models_dir(&data_dir(app)?), file)?;
     let backend = installed_backend(app, &exe).map(|b| b.backend);
-    let args = server::server_args(&path, &server::gpu_args(std::env::consts::OS, backend));
+    let mut extra = server::gpu_args(std::env::consts::OS, backend);
+    extra.extend(server::model_args(file));
+    let args = server::server_args(&path, &extra);
     log::info!("Starting llama-server with {args:?}");
     let health = reqwest::Client::builder()
         .no_proxy()

@@ -20,6 +20,14 @@ pub struct Entry {
     pub min_vram: u64,
     pub tags: Vec<String>,
     pub prompt_template: String,
+    /// Optional muted line shown under the description (e.g. a license caveat).
+    #[serde(default)]
+    pub note: Option<String>,
+}
+
+/// The entry whose file name is exactly `file`.
+pub fn by_file<'a>(entries: &'a [Entry], file: &str) -> Option<&'a Entry> {
+    entries.iter().find(|e| e.file == file)
 }
 
 /// Parses a catalog JSON array.
@@ -45,29 +53,31 @@ pub struct Recommendation {
     pub badges: Vec<String>,
 }
 
-/// Up to `limit` entries that fit `b`: Full before Partial, larger first within each (CPU only: smallest first). Badges:
-/// "Best quality" on the largest returned, "Fastest" on the smallest when more than one is returned,
+/// Up to `limit` entries that fit `b`. With a GPU: Full before Partial, then catalog order (the order is the
+/// quality rank). CPU only: smallest first. Badges: "Best quality" on the returned entry earliest in the catalog,
+/// "Fastest" on the smallest returned when more than one is returned and it is not the best one,
 /// then "Fits your GPU", or "Partly on CPU, slower" (GPU present) / "Runs on CPU, slower" (none) for Partial.
 pub fn recommend(entries: &[Entry], b: &Budget, limit: usize) -> Vec<Recommendation> {
-    let mut fits: Vec<(Entry, Fit)> =
-        entries.iter().map(|e| (e.clone(), fit(required(e), b))).filter(|(_, f)| *f != Fit::TooBig).collect();
+    let mut fits: Vec<(usize, Entry, Fit)> = entries
+        .iter()
+        .enumerate()
+        .map(|(i, e)| (i, e.clone(), fit(required(e), b)))
+        .filter(|(_, _, f)| *f != Fit::TooBig)
+        .collect();
     if b.gpu == 0 {
-        fits.sort_by_key(|(e, _)| e.size); // CPU only: smaller is faster
+        fits.sort_by_key(|(_, e, _)| e.size); // CPU only: smaller is faster
     } else {
-        fits.sort_by_key(|(e, f)| (*f != Fit::Full, std::cmp::Reverse(e.size)));
+        fits.sort_by_key(|(i, _, f)| (*f != Fit::Full, *i));
     }
     fits.truncate(limit);
-    let (largest, smallest) = (
-        fits.iter().map(|(e, _)| e.size).max().unwrap_or(0),
-        fits.iter().map(|(e, _)| e.size).min().unwrap_or(0),
-    );
+    let best = fits.iter().map(|(i, _, _)| *i).min();
+    let smallest = fits.iter().map(|(_, e, _)| e.size).min().unwrap_or(0);
     let many = fits.len() > 1;
-    let mut best_done = false;
     let mut fast_done = false;
     fits.into_iter()
-        .map(|(entry, fit)| {
+        .map(|(i, entry, fit)| {
             let mut badges = Vec::new();
-            if entry.size == largest && !std::mem::replace(&mut best_done, true) {
+            if Some(i) == best {
                 badges.push("Best quality".to_string());
             } else if many && entry.size == smallest && !std::mem::replace(&mut fast_done, true) {
                 badges.push("Fastest".to_string());

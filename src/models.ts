@@ -3,7 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 
 type Fit = "full" | "partial" | "toobig";
 type Backend = "cpu" | "vulkan" | "cuda";
-type Entry = { id: string; name: string; description: string; repo: string; file: string; size: number };
+type Entry = { id: string; name: string; description: string; repo: string; file: string; size: number; note?: string | null };
 type Offload = { device: string | null; layers: number; total: number };
 type ServerStatus = {
   state: "stopped" | "loading" | "ready" | "error";
@@ -329,6 +329,7 @@ function renderRecommended() {
         return h("div", { class: "model-card" },
           h("div", { class: "card-title" }, h("h3", {}, e.name), idx === 0 && h("span", { class: "tag" }, "Recommended")),
           h("div", { class: "desc" }, e.description),
+          e.note && h("div", { class: "note" }, e.note),
           h("div", { class: "badges" }, h("span", { class: "badge" }, size(e.size)), ...badges.map(textBadge)),
           h("div", { class: "action" },
             downloadingKey(e.file)

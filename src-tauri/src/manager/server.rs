@@ -39,6 +39,16 @@ pub fn gpu_args(os: &str, backend: Option<Backend>) -> Vec<String> {
     }
 }
 
+/// Extra flags for model `file`: Qwen3 (and 3.5) and Gemma 4 think by default, which is wasted time for translation.
+pub fn model_args(file: &str) -> Vec<String> {
+    let f = file.to_ascii_lowercase();
+    if f.starts_with("qwen3") || f.starts_with("gemma-4") {
+        vec!["--reasoning-budget".into(), "0".into()]
+    } else {
+        vec![]
+    }
+}
+
 /// `["-m", <model>, "--host", HOST, "--port", PORT, "-c", CONTEXT, "-lv", "4"]` then `gpu`. Verbosity 4 is
 /// needed: the bundled build only logs which device and how many layers it offloaded at that level.
 pub fn server_args(model: &Path, gpu: &[String]) -> Vec<OsString> {

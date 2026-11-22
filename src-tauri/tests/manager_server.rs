@@ -2,7 +2,7 @@ use std::path::Path;
 
 use screen_translate_lib::manager::runtime::Backend;
 use screen_translate_lib::manager::server::{
-    base_url, gpu_args, next, parse_offload_line, server_args, should_fallback_to_vulkan, Event, Exit, LogTail, Offload, Status,
+    base_url, gpu_args, model_args, next, parse_offload_line, server_args, should_fallback_to_vulkan, Event, Exit, LogTail, Offload, Status,
 };
 use serde_json::json;
 
@@ -671,3 +671,18 @@ fn log_tail_after_ready_keeps_only_non_info_lines_but_still_parses_offload() {
     assert_eq!(t.offload(), off(None, 1, 2));
 }
 
+
+#[test]
+fn model_args_disable_reasoning_for_qwen3_and_gemma4() {
+    let want = vec!["--reasoning-budget".to_string(), "0".to_string()];
+    for f in ["Qwen3-8B-Q4_K_M.gguf", "qwen3-8b-q4_k_m.gguf", "Qwen3.5-9B-Q4_K_M.gguf", "QWEN3.5-9B-Q4_K_M.GGUF", "gemma-4-12b-it-qat-q4_0.gguf", "Gemma-4-E4B.gguf"] {
+        assert_eq!(model_args(f), want, "{f}");
+    }
+}
+
+#[test]
+fn model_args_empty_for_other_models() {
+    for f in ["Hy-MT2-7B-Q4_K_M.gguf", "Hy-MT2-1.8B-Q4_K_M.gguf", "Qwen2.5-7B-Instruct-Q4_K_M.gguf", "qwen2.5-3b.gguf", "gemma-3-12b-it.gguf", "x.gguf", ""] {
+        assert!(model_args(f).is_empty(), "{f}");
+    }
+}

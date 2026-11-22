@@ -197,6 +197,7 @@ details[open] > summary { margin-bottom: var(--space-2); }
 .action { min-height: 32px; display: flex; align-items: center; }
 .action > .btn { flex: 1; }
 .model-card .desc { flex: 1; color: var(--text-muted); font-size: var(--text-small); }
+.model-card .note { color: var(--text-muted); font-size: var(--text-small); font-style: italic; }
 .badges { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 
 .list { display: flex; flex-direction: column; }

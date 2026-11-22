@@ -402,8 +402,20 @@ async fn translate_text(
     let target = settings::target_lang(app);
     let provider = settings::provider(app);
     let (url, model) = (settings::local_url(app), settings::local_model(app));
-    // Provider, server URL and model are part of the cache key, so switching any never serves stale results.
-    let cache_target = if provider == "local" { format!("local:{url}:{model}:{target}") } else { target.clone() };
+    // On the managed server the model file picks the prompt template (and is part of the cache key).
+    let managed = (provider == "local" && manager::is_managed_url(&url))
+        .then(|| settings::managed_model(app))
+        .flatten();
+    let template = managed
+        .as_deref()
+        .and_then(|f| manager::catalog::by_file(manager::catalog::entries(), f))
+        .map_or(translate::local::Template::Default, |e| translate::local::Template::from_id(&e.prompt_template));
+    // Provider, server URL, model and managed file are part of the cache key, so switching any never serves stale results.
+    let cache_target = if provider == "local" {
+        format!("local:{url}:{model}:{}:{target}", managed.as_deref().unwrap_or(""))
+    } else {
+        target.clone()
+    };
     if let Some(t) = cache.lock().ok().and_then(|mut c| c.get(&cache_target, text)) {
         return Ok((t, true));
     }
@@ -413,7 +425,7 @@ async fn translate_text(
         return Err(msg.into());
     }
     let t = if provider == "local" {
-        Local::new(url, model, http.local.clone()).translate(text, &target).await?
+        Local::new(url, model, http.local.clone()).with_template(template).translate(text, &target).await?
     } else {
         let Some(key) = settings::api_key() else {
             log::warn!("no DeepL API key set");

@@ -6,13 +6,10 @@
   const delay = Number(q.get("delay")) || 0; // ms to hold manager_status back so the skeleton is visible
   const GB = 1e9, OVERHEAD = 1.5e9;
   const catalog = (window.__CATALOG__ || []).slice();
-  if (catalog.length < 3)
-    catalog.push({ id: "qwen2.5-14b", name: "Qwen2.5 14B Instruct", description: "Best translations. Wants a GPU with about 12 GB of memory.",
-      repo: "bartowski/Qwen2.5-14B-Instruct-GGUF", file: "Qwen2.5-14B-Instruct-Q4_K_M.gguf", size: 8.99 * GB, sha256: "0".repeat(64),
-      min_vram: 10.5 * GB, tags: ["quality"], prompt_template: "default" });
-  catalog.sort((a, b) => a.size - b.size);
-
-  const fitOf = (size, b) => (b.gpu > 0 && size + OVERHEAD <= b.gpu ? "full" : size + OVERHEAD <= b.total ? "partial" : "toobig");
+  const fitOf = (size, b, minVram = 0) => {
+    const need = Math.max(size + OVERHEAD, minVram);
+    return b.gpu > 0 && need <= b.gpu ? "full" : need <= b.total ? "partial" : "toobig";
+  };
   const HW = {
     gpu: { name: "NVIDIA GeForce RTX 3070", vendor: "nvidia", vram: 8 * GB, driver: "551.86", max_cuda: { major: 12, minor: 4 } },
   };
@@ -36,7 +33,7 @@
     const v = h.gpu ? h.gpu.vram : 0;
     return { gpu: v, total: v + Math.floor(h.ram / 2) };
   };
-  const first = catalog.find((c) => c.id === "qwen2.5-7b") || catalog[0];
+  const first = catalog.find((c) => c.id === "hy-mt2-7b") || catalog[0];
   if (scenario === "downloading") S.downloading = true;
   if (scenario === "ready" || scenario === "error") {
     S.installed = [{ file: first.file, size: first.size }, { file: catalog[0].file, size: catalog[0].size }];
@@ -51,15 +48,15 @@
 
   function managerStatus() {
     const b = budget();
-    const wrap = (e) => ({ ...e, fit: fitOf(e.size, b) });
+    const wrap = (e) => ({ ...e, fit: fitOf(e.size, b, e.min_vram) });
     const rank = { full: 0, partial: 1, toobig: 2 };
-    const cat = catalog.map(wrap);
-    const fits = cat.filter((e) => e.fit !== "toobig").sort((a, c) => (b.gpu > 0 ? rank[a.fit] - rank[c.fit] || c.size - a.size : a.size - c.size)).slice(0, 3);
-    const largest = Math.max(...fits.map((e) => e.size)), smallest = Math.min(...fits.map((e) => e.size));
-    let bd = false, fd = false;
+    const cat = catalog.map(wrap); // catalog order is the quality rank
+    const fits = cat.filter((e) => e.fit !== "toobig").sort((a, c) => (b.gpu > 0 ? rank[a.fit] - rank[c.fit] || cat.indexOf(a) - cat.indexOf(c) : a.size - c.size)).slice(0, 3);
+    const best = fits.reduce((m, e) => Math.min(m, cat.indexOf(e)), Infinity), smallest = Math.min(...fits.map((e) => e.size));
+    let fd = false;
     const recommended = fits.map((e) => {
       const badges = [];
-      if (e.size === largest && !bd) { bd = true; badges.push("Best quality"); }
+      if (cat.indexOf(e) === best) badges.push("Best quality");
       else if (fits.length > 1 && e.size === smallest && !fd) { fd = true; badges.push("Fastest"); }
       badges.push(e.fit === "full" ? "Fits your GPU" : b.gpu > 0 ? "Partly on CPU, slower" : "Runs on CPU, slower");
       const { fit, ...entry } = e;

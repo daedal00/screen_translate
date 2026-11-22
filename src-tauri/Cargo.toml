@@ -32,6 +32,9 @@ reqwest = { version = "0.13.5", default-features = false, features = ["rustls", 
 serde_json = "1"
 # SHA-256 verification of downloaded llama.cpp archives (already in the lockfile via tauri).
 sha2 = "0.10"
+# Parallel range downloads: FuturesUnordered and the cancel/progress tick (both already in the lockfile via reqwest/tauri).
+futures-util = { version = "0.3", default-features = false, features = ["alloc"] }
+tokio = { version = "1", features = ["time"] }
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

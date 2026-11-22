@@ -215,12 +215,10 @@ fn bundled_catalog_has_the_four_benchmark_models_in_order() {
 }
 
 #[test]
-fn bundled_catalog_notes() {
+fn bundled_catalog_has_no_notes() {
+    // Hy-MT2 GGUF repos are Apache-2.0, so no license caveat is needed.
     for e in entries() {
-        match e.id.as_str() {
-            "hy-mt2-7b" | "hy-mt2-1.8b" => assert_eq!(e.note.as_deref(), Some("Tencent license; check its territory terms."), "{}", e.id),
-            _ => assert_eq!(e.note, None, "{}", e.id),
-        }
+        assert_eq!(e.note, None, "{}", e.id);
     }
 }
 
@@ -234,8 +232,9 @@ fn bundled_catalog_has_no_translategemma_or_qwen25() {
 
 #[test]
 fn note_is_serialized_to_the_ui() {
-    let v = serde_json::to_value(&entries()[1]).unwrap();
-    assert_eq!(v["note"], "Tencent license; check its territory terms.");
+    let j = r#"[{"id":"a","name":"A","description":"d","repo":"o/r","file":"a.gguf","size":5,"sha256":null,"min_vram":0,"tags":[],"prompt_template":"p","note":"hello"}]"#;
+    let v: Vec<Entry> = serde_json::from_str(j).unwrap();
+    assert_eq!(serde_json::to_value(&v[0]).unwrap()["note"], "hello");
     assert!(serde_json::to_value(&entries()[0]).unwrap()["note"].is_null());
 }
 

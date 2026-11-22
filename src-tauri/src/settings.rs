@@ -2,6 +2,7 @@ use serde::Serialize;
 use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
 
+use crate::mode::Mode;
 use crate::translate::local::DEFAULT_BASE;
 
 const SERVICE: &str = "com.screentranslate.app";
@@ -11,6 +12,7 @@ const TARGET_KEY: &str = "target_lang";
 const PROVIDER_KEY: &str = "provider";
 const URL_KEY: &str = "local_url";
 const MODEL_KEY: &str = "local_model";
+const MODE_KEY: &str = "mode";
 const LEGACY_MODEL_KEY: &str = "ollama_model";
 pub const PROVIDERS: &[&str] = &["deepl", "local"];
 pub const DEFAULT_PROVIDER: &str = "deepl";
@@ -69,6 +71,7 @@ pub struct Settings {
     provider: String,
     local_url: String,
     local_model: String,
+    mode: String,
 }
 
 fn entry() -> Result<keyring::Entry, String> {
@@ -101,6 +104,10 @@ fn resolved(app: &AppHandle) -> (String, String, String) {
     )
 }
 
+pub fn mode(app: &AppHandle) -> Mode {
+    Mode::from_stored(stored(app, MODE_KEY).as_deref())
+}
+
 pub fn provider(app: &AppHandle) -> String {
     resolved(app).0
 }
@@ -123,6 +130,7 @@ pub fn get_settings(app: AppHandle) -> Settings {
         provider,
         local_url,
         local_model,
+        mode: mode(&app).as_str().into(),
     }
 }
 
@@ -134,7 +142,9 @@ pub fn save_settings(
     provider: String,
     local_url: String,
     local_model: String,
+    mode: String,
 ) -> Result<(), String> {
+    let mode = Mode::parse(&mode).ok_or_else(|| format!("unsupported mode {mode:?}"))?;
     let provider = normalize_provider(&provider).ok_or_else(|| format!("unsupported provider {provider:?}"))?;
     let local_url = local_url.trim();
     if provider == "local" && !is_valid_url(local_url) {
@@ -149,10 +159,12 @@ pub fn save_settings(
     let store = app.store(STORE).map_err(|e| e.to_string())?;
     store.set(TARGET_KEY, target_lang);
     store.set(PROVIDER_KEY, provider);
+    store.set(MODE_KEY, mode.as_str());
     if provider == "local" {
         store.set(URL_KEY, local_url);
         store.set(MODEL_KEY, local_model.trim());
     }
+    crate::refresh_tray(&app);
     store.save().map_err(|e| e.to_string())
 }
 

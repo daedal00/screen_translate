@@ -16,6 +16,12 @@
     <script type="module" src="/src/settings.ts" defer></script>
   </head>
   <body>
+    <label for="mode">Translation mode</label>
+    <select id="mode">
+      <option value="popup">Popup (one-shot)</option>
+      <option value="live">Live (pinned region)</option>
+    </select>
+    <div class="hint">Ctrl/Cmd+Shift+T runs this mode. Ctrl/Cmd+Shift+L runs the other.</div>
     <label for="provider">Translation provider</label>
     <select id="provider">
       <option value="deepl">DeepL (needs API key)</option>

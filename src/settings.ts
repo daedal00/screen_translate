@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 const key = document.querySelector<HTMLInputElement>("#key")!;
 const lang = document.querySelector<HTMLSelectElement>("#lang")!;
+const mode = document.querySelector<HTMLSelectElement>("#mode")!;
 const provider = document.querySelector<HTMLSelectElement>("#provider")!;
 const url = document.querySelector<HTMLInputElement>("#url")!;
 const model = document.querySelector<HTMLInputElement>("#model")!;
@@ -33,10 +34,11 @@ function syncRemote() {
 }
 url.addEventListener("input", syncRemote);
 
-invoke<{ has_key: boolean; target_lang: string; provider: string; local_url: string; local_model: string }>("get_settings")
+invoke<{ has_key: boolean; target_lang: string; provider: string; local_url: string; local_model: string; mode: string }>("get_settings")
   .then((s) => {
     if (s.has_key) key.placeholder = "saved";
     lang.value = s.target_lang;
+    mode.value = s.mode;
     provider.value = s.provider;
     url.value = s.local_url;
     model.value = s.local_model;
@@ -66,6 +68,7 @@ save.addEventListener("click", async () => {
       provider: provider.value,
       localUrl: url.value,
       localModel: model.value,
+      mode: mode.value,
     });
     if (key.value) key.placeholder = "saved";
     key.value = "";

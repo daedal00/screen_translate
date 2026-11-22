@@ -2,10 +2,32 @@
 
 Tray app: press `Ctrl/Cmd+Shift+T`, drag-select a screen region, OCR it, and translate it to English. Windows is the main target.
 
+## Install
+
+Download the installer for your system from the [latest release](https://github.com/daedal00/screen_translate/releases/latest).
+
+**macOS 13+ (Apple Silicon and Intel):** open the `.dmg` and drag Screen Translate to Applications. The app isn't signed with an Apple Developer ID yet, so macOS blocks the first launch. To allow it, either:
+- try to open the app once, then (within about an hour) open System Settings > Privacy & Security and click **Open Anyway** next to the Screen Translate message, or
+- run `xattr -cr "/Applications/Screen Translate.app"` in Terminal.
+
+On first use, grant Screen Recording permission when asked (System Settings > Privacy & Security > Screen Recording), then restart the app.
+
+After updating on macOS, each new version counts as a new app: remove the old Screen Translate entry under Screen Recording (the `-` button) and grant it again, and click **Always Allow** if macOS asks about keychain access for your DeepL key.
+
+**Windows 10/11:** run the `_x64-setup.exe` (or the `.msi`). If SmartScreen shows "Windows protected your PC", click **More info** > **Run anyway**.
+
+## Development
+
 ```
 npm install
 npm run tauri dev
 ```
+
+## Releasing
+
+Bump `version` in `src-tauri/tauri.conf.json` (keep `package.json` and `src-tauri/Cargo.toml` in sync) and merge to `main`. The Release workflow runs the tests, builds macOS and Windows installers into a draft release, and publishes `v<version>` once both platforms succeed. Merges that keep the version don't create a release. Use plain `MAJOR.MINOR.PATCH` versions (the Windows MSI rejects prerelease suffixes like `-beta.1`).
+
+If a platform build fails, the draft stays and later pushes at that version skip: re-run the failed jobs from the Actions tab, or delete the draft release and push again.
 
 ## Setting up translation (DeepL API key)
 

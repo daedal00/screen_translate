@@ -21,8 +21,7 @@
     "sha256": "9f96256500f3fc1ab4d64336b58f52a949a95ad7516b0c229476eef782f9f77b",
     "min_vram": 6200000000,
     "tags": ["translation"],
-    "prompt_template": "hy-mt",
-    "note": "Tencent license; check its territory terms."
+    "prompt_template": "hy-mt"
   },
   {
     "id": "hy-mt2-1.8b",
@@ -34,13 +33,12 @@
     "sha256": "dc5f44fcf1fa496ee7ad725982c0c8c553a4de00259b53af84c4b89fb0c06699",
     "min_vram": 2700000000,
     "tags": ["fast", "small"],
-    "prompt_template": "hy-mt",
-    "note": "Tencent license; check its territory terms."
+    "prompt_template": "hy-mt"
   },
   {
     "id": "qwen3-8b",
     "name": "Qwen3 8B",
-    "description": "General-purpose alternative with a standard open license.",
+    "description": "General-purpose alternative from the Qwen family.",
     "repo": "Qwen/Qwen3-8B-GGUF",
     "file": "Qwen3-8B-Q4_K_M.gguf",
     "size": 5027783488,

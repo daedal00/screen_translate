@@ -62,7 +62,7 @@ Pick "Local model" as the provider in Settings to translate with a local model i
 | Hy-MT2 1.8B | 1.1 GB | Very fast, close to the 7B quality | Any GPU, or CPU only |
 | Qwen3 8B | 5.0 GB | General-purpose, standard open license | 8 GB GPUs, Macs with 16 GB |
 
-Chosen by the benchmark in [`bench/`](bench/) (COMET on FLORES-200 and screen-style text, Japanese, Korean, French, German and Spanish to English). Quality numbers should transfer to other machines; speed will not (it was measured on an M1 Pro with 16 GB). The Hy-MT2 models use Tencent's license, so check its territory terms before relying on them.
+Chosen by the benchmark in [`bench/`](bench/) (COMET on FLORES-200 and screen-style text, Japanese, Korean, French, German and Spanish to English). Quality numbers should transfer to other machines; speed will not (it was measured on an M1 Pro with 16 GB).
 
 Large downloads use several connections in parallel and are verified with SHA-256 when Hugging Face publishes a checksum.
 

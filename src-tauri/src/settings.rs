@@ -13,6 +13,8 @@ const PROVIDER_KEY: &str = "provider";
 const URL_KEY: &str = "local_url";
 const MODEL_KEY: &str = "local_model";
 const MODE_KEY: &str = "mode";
+const MANAGED_MODEL_KEY: &str = "managed_model";
+const MANAGED_AUTOSTART_KEY: &str = "managed_autostart";
 const LEGACY_MODEL_KEY: &str = "ollama_model";
 pub const PROVIDERS: &[&str] = &["deepl", "local"];
 pub const DEFAULT_PROVIDER: &str = "deepl";
@@ -174,4 +176,37 @@ pub fn clear_api_key() -> Result<(), String> {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
         Err(e) => Err(e.to_string()),
     }
+}
+
+pub fn managed_model(app: &AppHandle) -> Option<String> {
+    stored(app, MANAGED_MODEL_KEY).filter(|m| !m.is_empty())
+}
+
+pub fn managed_autostart(app: &AppHandle) -> bool {
+    app.store(STORE).ok().and_then(|s| s.get(MANAGED_AUTOSTART_KEY)).and_then(|v| v.as_bool()).unwrap_or(false)
+}
+
+pub fn set_managed_model(app: &AppHandle, file: Option<&str>) -> Result<(), String> {
+    let store = app.store(STORE).map_err(|e| e.to_string())?;
+    match file {
+        Some(f) => store.set(MANAGED_MODEL_KEY, f),
+        None => {
+            store.delete(MANAGED_MODEL_KEY);
+        }
+    }
+    store.save().map_err(|e| e.to_string())
+}
+
+pub fn set_managed_autostart(app: &AppHandle, enabled: bool) -> Result<(), String> {
+    let store = app.store(STORE).map_err(|e| e.to_string())?;
+    store.set(MANAGED_AUTOSTART_KEY, enabled);
+    store.save().map_err(|e| e.to_string())
+}
+
+/// Points the Local provider at the managed server (any loaded model); leaves `provider` alone.
+pub fn use_managed_server(app: &AppHandle) -> Result<(), String> {
+    let store = app.store(STORE).map_err(|e| e.to_string())?;
+    store.set(URL_KEY, crate::manager::server::base_url());
+    store.set(MODEL_KEY, "");
+    store.save().map_err(|e| e.to_string())
 }

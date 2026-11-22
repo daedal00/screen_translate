@@ -44,9 +44,21 @@ The transparent selector needs Tauri's `macOSPrivateApi`, which makes the app in
 
 ## Local model mode
 
-Translate with a model running on your own computer instead of DeepL: no account, no API key, and the captured text never leaves your machine. The app talks to [llama.cpp](https://github.com/ggml-org/llama.cpp)'s `llama-server` (any OpenAI-compatible server works). Local models are slower than DeepL, and you need a few GB of free disk and memory.
+Pick "Local model" as the provider in Settings to translate with a local model instead of DeepL: no account or API key, and the captured text never leaves your machine. You need a few GB of free disk and memory. The app can install and run [llama.cpp](https://github.com/ggml-org/llama.cpp) for you:
 
-### 1. Install llama.cpp
+1. In Settings, choose provider "Local model".
+2. Under "Managed by the app", click **Install llama.cpp**. On Windows, first pick a backend: Vulkan (most GPUs, default), CPU only, or NVIDIA CUDA 12.4 (large download).
+3. Download a model: pick one from the list (Qwen2.5 3B, about 1.9 GB, fast but rougher; or Qwen2.5 7B, about 4.7 GB, recommended), or enter a custom Hugging Face `owner/repo:quant` or an https URL to a `.gguf` file.
+4. Click **Start** next to the model. When it is ready, Settings fills in the Server URL for you. Press Save.
+5. Optionally tick "Start the server when the app launches".
+
+Files live in the app data directory: `~/Library/Application Support/com.screentranslate.app/` on macOS and `%APPDATA%\com.screentranslate.app\` on Windows, in `llama/` (the runtime) and `models/`. The managed server listens only on `127.0.0.1:18080`. Port 18080 is reserved for it, so don't run your own server there. Local models are slower than DeepL; the first request after startup may be slow.
+
+### Manual setup
+
+To run your own server instead, any OpenAI-compatible one works. These steps use llama.cpp's `llama-server`; you need a few GB of free disk and memory.
+
+#### 1. Install llama.cpp
 
 **macOS** (Apple Silicon recommended; uses the GPU automatically), with [Homebrew](https://brew.sh):
 
@@ -64,7 +76,7 @@ Close and reopen PowerShell afterwards so `llama-server` is on your PATH. For th
 
 Check it worked: `llama-server --version` prints a version.
 
-### 2. Pick a model
+#### 2. Pick a model
 
 Pick the largest model that fits in your GPU's memory (VRAM), or in unified memory on a Mac (leave room for your other apps). Bigger models translate more naturally, especially Japanese, Chinese and Korean. All of these are Qwen 2.5 Instruct (strong at CJK) at Q4_K_M quantization:
 
@@ -77,7 +89,7 @@ Pick the largest model that fits in your GPU's memory (VRAM), or in unified memo
 
 Avoid reasoning models (Qwen3, DeepSeek-R1): they think before answering, which adds seconds per translation.
 
-### 3. Download and load the model
+#### 3. Download and load the model
 
 Start the server with the model you picked (same command on macOS and Windows):
 
@@ -91,7 +103,7 @@ llama-server -hf Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M -c 4096
 - **Keep this terminal open** while you use Screen Translate. Press `Ctrl+C` to stop the server, and run the same command again next time.
 - To switch models, stop the server and start it with a different `-hf` value. To use a `.gguf` file you downloaded yourself, run `llama-server -m path\to\model.gguf -c 4096` instead.
 
-### 4. Point Screen Translate at it
+#### 4. Point Screen Translate at it
 
 1. Open **Settings** from the tray icon.
 2. Set **Provider** to **Local model (llama.cpp)**.
@@ -100,7 +112,7 @@ llama-server -hf Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M -c 4096
 
 **Ollama** also works: set the URL to `http://127.0.0.1:11434` and enter a model name such as `qwen2.5:7b`.
 
-### Troubleshooting
+#### Troubleshooting
 
 - **"Local model server is not running"**: llama-server isn't started, or is still loading. Check its terminal for the `listening` line.
 - **Very slow translations**: the model doesn't fit in GPU memory. Pick a smaller one from the table. On Windows, make sure you use the CUDA or Vulkan build, not a CPU-only one.

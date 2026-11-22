@@ -1,5 +1,6 @@
 pub mod capture;
 pub mod live;
+pub mod manager;
 pub mod mode;
 pub mod ocr;
 pub mod popup;
@@ -404,6 +405,11 @@ async fn translate_text(
     let cache_target = if provider == "local" { format!("local:{url}:{model}:{target}") } else { target.clone() };
     if let Some(t) = cache.lock().ok().and_then(|mut c| c.get(&cache_target, text)) {
         return Ok((t, true));
+    }
+    if provider == "local"
+        && let Some(msg) = manager::managed_not_ready(&url, &app.state::<manager::ManagerState>().server.status())
+    {
+        return Err(msg.into());
     }
     let t = if provider == "local" {
         Local::new(url, model, http.local.clone()).translate(text, &target).await?
@@ -820,6 +826,7 @@ pub fn run() {
         .manage(Latest::default())
         .manage(LiveSelect::default())
         .manage(Live::default())
+        .manage(manager::ManagerState::default())
         .manage(Http { deepl: translate::deepl::http_client(), local: translate::local::http_client() })
         .manage(Cache(Mutex::new(TranslationCache::new(256))))
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -836,13 +843,19 @@ pub fn run() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![submit_region, close_window, get_last_result, get_live_lines, open_settings_window, settings::get_settings, settings::save_settings, settings::clear_api_key])
+        .invoke_handler(tauri::generate_handler![submit_region, close_window, get_last_result, get_live_lines, open_settings_window, settings::get_settings, settings::save_settings, settings::clear_api_key, manager::manager_status, manager::install_runtime, manager::download_model, manager::cancel_download, manager::delete_model, manager::start_server, manager::stop_server, manager::set_autostart])
         .setup(move |app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             app.global_shortcut().register(hotkey)?;
             app.global_shortcut().register(secondary_hotkey)?;
             create_overlays(app.handle())?;
+            if settings::managed_autostart(app.handle())
+                && let Some(file) = settings::managed_model(app.handle())
+                && let Err(e) = manager::start(app.handle(), &file)
+            {
+                log::warn!("managed server autostart failed: {e}");
+            }
 
             let (main_label, secondary_label) = mode::tray_labels(settings::mode(app.handle()));
             let main = MenuItem::with_id(app, "main", main_label, true, None::<&str>)?;
@@ -875,7 +888,10 @@ pub fn run() {
         })
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
-        .run(|_app, event| {
+        .run(|app, event| {
+            if let RunEvent::Exit = event {
+                app.state::<manager::ManagerState>().server.stop();
+            }
             // Tray app: closing the selector must not exit. Explicit `exit(0)` still quits.
             if let RunEvent::ExitRequested { api, code: None, .. } = event {
                 api.prevent_exit();

@@ -71,7 +71,7 @@ fn statuses() -> [Status; 4] {
     [
         Status::Stopped,
         Status::Loading { model: "m".into() },
-        Status::Ready { model: "m".into() },
+        Status::Ready { model: "m".into(), offload: None },
         Status::Error { message: "e".into(), log: vec![] },
     ]
 }
@@ -79,7 +79,7 @@ fn statuses() -> [Status; 4] {
 #[test]
 fn managed_url_variants_map_status_to_message() {
     for url in ["http://127.0.0.1:18080", "http://127.0.0.1:18080/", "http://127.0.0.1:18080/v1", "http://127.0.0.1:18080/v1/"] {
-        assert_eq!(managed_not_ready(url, &Status::Ready { model: "m".into() }), None, "{url}");
+        assert_eq!(managed_not_ready(url, &Status::Ready { model: "m".into(), offload: None }), None, "{url}");
         assert_eq!(managed_not_ready(url, &Status::Loading { model: "m".into() }), Some(MANAGED_LOADING), "{url}");
         assert_eq!(managed_not_ready(url, &Status::Stopped), Some(MANAGED_STOPPED), "{url}");
         assert_eq!(

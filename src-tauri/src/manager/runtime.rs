@@ -17,6 +17,19 @@ pub enum Backend {
     Cuda,
 }
 
+/// A CUDA toolkit version, as in the `cuda-12.4` release asset names and the driver's CUDA level.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize)]
+pub struct CudaVer {
+    pub major: u32,
+    pub minor: u32,
+}
+
+impl std::fmt::Display for CudaVer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}", self.major, self.minor)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Asset {
     pub name: String,
@@ -72,13 +85,34 @@ pub fn parse_releases(json: &str) -> Result<Vec<Release>, String> {
     Ok(releases)
 }
 
+/// CUDA versions `v` for which the release has both `llama-<tag>-bin-win-cuda-<v>-x64.zip` and
+/// `cudart-llama-bin-win-cuda-<v>-x64.zip`, newest first.
+pub fn cuda_variants(release: &Release) -> Vec<CudaVer> {
+    let prefix = format!("llama-{}-bin-win-cuda-", release.tag);
+    let has = |n: &str| release.assets.iter().any(|a| a.name == n);
+    let mut versions: Vec<CudaVer> = release
+        .assets
+        .iter()
+        .filter_map(|a| a.name.strip_prefix(&prefix)?.strip_suffix("-x64.zip"))
+        .filter_map(|v| {
+            let (major, minor) = v.split_once('.')?;
+            Some(CudaVer { major: major.parse().ok()?, minor: minor.parse().ok()? })
+        })
+        .filter(|v| has(&format!("cudart-llama-bin-win-cuda-{v}-x64.zip")))
+        .collect();
+    versions.sort_by(|a, b| b.cmp(a));
+    versions.dedup();
+    versions
+}
+
 /// Assets to download for `os`/`arch` (values of `std::env::consts::{OS, ARCH}`):
 /// - macos aarch64: `llama-<tag>-bin-macos-arm64.tar.gz`; macos x86_64: `llama-<tag>-bin-macos-x64.tar.gz`
 /// - windows x86_64: cpu `llama-<tag>-bin-win-cpu-x64.zip`, vulkan `llama-<tag>-bin-win-vulkan-x64.zip`,
-///   cuda `llama-<tag>-bin-win-cuda-12.4-x64.zip` followed by `cudart-llama-bin-win-cuda-12.4-x64.zip`
+///   cuda `llama-<tag>-bin-win-cuda-<v>-x64.zip` followed by `cudart-llama-bin-win-cuda-<v>-x64.zip`, for the
+///   newest `cuda_variants` version `<= max_cuda` (any when `max_cuda` is None)
 ///
 /// Anything else, or a missing asset, is an Err naming the platform or asset.
-pub fn select_assets(release: &Release, os: &str, arch: &str, backend: Backend) -> Result<Vec<Asset>, String> {
+pub fn select_assets(release: &Release, os: &str, arch: &str, backend: Backend, max_cuda: Option<CudaVer>) -> Result<Vec<Asset>, String> {
     let tag = &release.tag;
     let names: Vec<String> = match (os, arch) {
         ("macos", "aarch64") => vec![format!("llama-{tag}-bin-macos-arm64.tar.gz")],
@@ -86,10 +120,13 @@ pub fn select_assets(release: &Release, os: &str, arch: &str, backend: Backend) 
         ("windows", "x86_64") => match backend {
             Backend::Cpu => vec![format!("llama-{tag}-bin-win-cpu-x64.zip")],
             Backend::Vulkan => vec![format!("llama-{tag}-bin-win-vulkan-x64.zip")],
-            Backend::Cuda => vec![
-                format!("llama-{tag}-bin-win-cuda-12.4-x64.zip"),
-                "cudart-llama-bin-win-cuda-12.4-x64.zip".to_string(),
-            ],
+            Backend::Cuda => {
+                let v = cuda_variants(release)
+                    .into_iter()
+                    .find(|v| max_cuda.is_none_or(|m| *v <= m))
+                    .ok_or_else(|| format!("Release {tag} has no CUDA build for this driver"))?;
+                vec![format!("llama-{tag}-bin-win-cuda-{v}-x64.zip"), format!("cudart-llama-bin-win-cuda-{v}-x64.zip")]
+            }
         },
         _ => return Err(format!("Unsupported platform: {os} {arch}")),
     };
@@ -108,9 +145,9 @@ pub fn select_assets(release: &Release, os: &str, arch: &str, backend: Backend) 
 
 /// Assets from the first release that has every asset for this platform, each with a sha256 and an https URL
 /// (a fresh release can lack assets for a few minutes while it uploads). Otherwise the newest release's error.
-pub fn pick_release(releases: &[Release], os: &str, arch: &str, backend: Backend) -> Result<Vec<Asset>, String> {
+pub fn pick_release(releases: &[Release], os: &str, arch: &str, backend: Backend, max_cuda: Option<CudaVer>) -> Result<Vec<Asset>, String> {
     let usable = |r: &Release| -> Result<Vec<Asset>, String> {
-        let assets = select_assets(r, os, arch, backend)?;
+        let assets = select_assets(r, os, arch, backend, max_cuda)?;
         for a in &assets {
             download::require_https(&a.url)?;
             if a.sha256.is_none() {
@@ -226,11 +263,12 @@ pub async fn install(
     client: &reqwest::Client,
     data_dir: &Path,
     backend: Backend,
+    max_cuda: Option<CudaVer>,
     cancel: &AtomicBool,
     on_progress: impl FnMut(&str, Progress),
 ) -> Result<PathBuf, String> {
     let releases = fetch_release(client, RELEASES_API).await?;
-    let assets = pick_release(&releases, std::env::consts::OS, std::env::consts::ARCH, backend)?;
+    let assets = pick_release(&releases, std::env::consts::OS, std::env::consts::ARCH, backend, max_cuda)?;
     install_assets(client, &runtime_dir(data_dir), &assets, cancel, on_progress).await
 }
 

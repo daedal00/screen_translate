@@ -2,8 +2,8 @@ use std::ffi::OsString;
 use std::path::Path;
 
 use screen_translate_lib::manager::runtime::{
-    fetch_release, find_server, parse_releases, pick_release, runtime_dir, select_assets, server_exe_name, Asset, Backend,
-    Release,
+    cuda_variants, fetch_release, find_server, parse_releases, pick_release, runtime_dir, select_assets, server_exe_name,
+    Asset, Backend, CudaVer, Release,
 };
 use serde_json::json;
 use wiremock::matchers::method;
@@ -78,6 +78,10 @@ fn parse_releases_no_matching_release_errs() {
     assert!(parse_releases("[]").is_err());
 }
 
+fn cv(major: u32, minor: u32) -> CudaVer {
+    CudaVer { major, minor }
+}
+
 fn names(v: &[Asset]) -> Vec<&str> {
     v.iter().map(|a| a.name.as_str()).collect()
 }
@@ -85,28 +89,28 @@ fn names(v: &[Asset]) -> Vec<&str> {
 #[test]
 fn select_macos_arm64_ignores_backend() {
     for b in [Backend::Cpu, Backend::Vulkan, Backend::Cuda] {
-        let got = select_assets(&release(), "macos", "aarch64", b).unwrap();
+        let got = select_assets(&release(), "macos", "aarch64", b, None).unwrap();
         assert_eq!(names(&got), vec!["llama-b12627-bin-macos-arm64.tar.gz"]);
     }
 }
 
 #[test]
 fn select_macos_x64() {
-    let got = select_assets(&release(), "macos", "x86_64", Backend::Cpu).unwrap();
+    let got = select_assets(&release(), "macos", "x86_64", Backend::Cpu, None).unwrap();
     assert_eq!(names(&got), vec!["llama-b12627-bin-macos-x64.tar.gz"]);
 }
 
 #[test]
 fn select_windows_cpu_and_vulkan() {
-    let cpu = select_assets(&release(), "windows", "x86_64", Backend::Cpu).unwrap();
+    let cpu = select_assets(&release(), "windows", "x86_64", Backend::Cpu, None).unwrap();
     assert_eq!(names(&cpu), vec!["llama-b12627-bin-win-cpu-x64.zip"]);
-    let vk = select_assets(&release(), "windows", "x86_64", Backend::Vulkan).unwrap();
+    let vk = select_assets(&release(), "windows", "x86_64", Backend::Vulkan, None).unwrap();
     assert_eq!(names(&vk), vec!["llama-b12627-bin-win-vulkan-x64.zip"]);
 }
 
 #[test]
 fn select_windows_cuda_returns_llama_then_cudart() {
-    let got = select_assets(&release(), "windows", "x86_64", Backend::Cuda).unwrap();
+    let got = select_assets(&release(), "windows", "x86_64", Backend::Cuda, Some(cv(12, 4))).unwrap();
     assert_eq!(
         names(&got),
         vec!["llama-b12627-bin-win-cuda-12.4-x64.zip", "cudart-llama-bin-win-cuda-12.4-x64.zip"]
@@ -115,15 +119,15 @@ fn select_windows_cuda_returns_llama_then_cudart() {
 
 #[test]
 fn select_unsupported_platforms_err() {
-    assert!(select_assets(&release(), "windows", "aarch64", Backend::Cpu).is_err());
-    assert!(select_assets(&release(), "linux", "x86_64", Backend::Cpu).is_err());
+    assert!(select_assets(&release(), "windows", "aarch64", Backend::Cpu, None).is_err());
+    assert!(select_assets(&release(), "linux", "x86_64", Backend::Cpu, None).is_err());
 }
 
 #[test]
 fn select_missing_asset_errs() {
     let mut r = release();
     r.assets.retain(|a| !a.name.contains("macos-arm64"));
-    let err = select_assets(&r, "macos", "aarch64", Backend::Cpu).unwrap_err();
+    let err = select_assets(&r, "macos", "aarch64", Backend::Cpu, None).unwrap_err();
     assert!(err.contains("macos-arm64"), "{err}");
 }
 
@@ -303,7 +307,7 @@ fn full(tag: &str) -> Release {
 
 #[test]
 fn pick_release_uses_newest_when_it_qualifies() {
-    let got = pick_release(&[full("b2"), full("b1")], "macos", "aarch64", Backend::Cpu).unwrap();
+    let got = pick_release(&[full("b2"), full("b1")], "macos", "aarch64", Backend::Cpu, None).unwrap();
     assert_eq!(names(&got), vec!["llama-b2-bin-macos-arm64.tar.gz"]);
 }
 
@@ -311,7 +315,7 @@ fn pick_release_uses_newest_when_it_qualifies() {
 fn pick_release_falls_back_when_newest_misses_an_asset() {
     let mut newest = full("b2");
     newest.assets.retain(|a| !a.name.starts_with("cudart"));
-    let got = pick_release(&[newest, full("b1")], "windows", "x86_64", Backend::Cuda).unwrap();
+    let got = pick_release(&[newest, full("b1")], "windows", "x86_64", Backend::Cuda, Some(cv(12, 4))).unwrap();
     assert_eq!(
         names(&got),
         vec!["llama-b1-bin-win-cuda-12.4-x64.zip", "cudart-llama-bin-win-cuda-12.4-x64.zip"]
@@ -324,7 +328,7 @@ fn pick_release_falls_back_when_newest_has_null_digest() {
     for a in &mut newest.assets {
         a.sha256 = None;
     }
-    let got = pick_release(&[newest, full("b1")], "macos", "x86_64", Backend::Cpu).unwrap();
+    let got = pick_release(&[newest, full("b1")], "macos", "x86_64", Backend::Cpu, None).unwrap();
     assert_eq!(names(&got), vec!["llama-b1-bin-macos-x64.tar.gz"]);
 }
 
@@ -334,7 +338,7 @@ fn pick_release_falls_back_when_newest_url_is_not_https() {
     for a in &mut newest.assets {
         a.url = a.url.replace("https://", "http://");
     }
-    let got = pick_release(&[newest, full("b1")], "macos", "aarch64", Backend::Cpu).unwrap();
+    let got = pick_release(&[newest, full("b1")], "macos", "aarch64", Backend::Cpu, None).unwrap();
     assert_eq!(names(&got), vec!["llama-b1-bin-macos-arm64.tar.gz"]);
 }
 
@@ -346,13 +350,13 @@ fn pick_release_errs_when_none_qualifies() {
     for x in &mut b.assets {
         x.sha256 = None;
     }
-    assert!(pick_release(&[a, b], "macos", "aarch64", Backend::Cpu).is_err());
-    assert!(pick_release(&[], "macos", "aarch64", Backend::Cpu).is_err());
+    assert!(pick_release(&[a, b], "macos", "aarch64", Backend::Cpu, None).is_err());
+    assert!(pick_release(&[], "macos", "aarch64", Backend::Cpu, None).is_err());
 }
 
 #[test]
 fn pick_release_unsupported_platform_errs() {
-    assert!(pick_release(&[full("b2")], "linux", "x86_64", Backend::Cpu).is_err());
+    assert!(pick_release(&[full("b2")], "linux", "x86_64", Backend::Cpu, None).is_err());
 }
 
 // ---- find_server hardening ----------------------------------------------------------------
@@ -591,4 +595,101 @@ mod install {
         assert_old_bin_intact(&rt);
         assert_no_leftovers(&rt);
     }
+}
+
+// ---- CUDA variants ------------------------------------------------------------------------
+
+fn cuda_release(extra: &[&str]) -> Release {
+    let mut n = vec![
+        "llama-b9-bin-win-cuda-12.4-x64.zip",
+        "cudart-llama-bin-win-cuda-12.4-x64.zip",
+        "llama-b9-bin-win-cuda-13.1-x64.zip",
+        "cudart-llama-bin-win-cuda-13.1-x64.zip",
+    ];
+    n.extend_from_slice(extra);
+    rel("b9", &n, Some(&"ab".repeat(32)), "https://e/b9")
+}
+
+#[test]
+fn cuda_ver_display_order_and_serde() {
+    assert_eq!(cv(12, 4).to_string(), "12.4");
+    assert!(cv(12, 9) < cv(13, 0));
+    assert!(cv(13, 1) > cv(13, 0));
+    assert_eq!(serde_json::to_value(cv(12, 6)).unwrap(), json!({ "major": 12, "minor": 6 }));
+}
+
+#[test]
+fn cuda_variants_newest_first() {
+    assert_eq!(cuda_variants(&cuda_release(&[])), vec![cv(13, 1), cv(12, 4)]);
+}
+
+#[test]
+fn cuda_variants_requires_both_zips_and_ignores_other_names() {
+    let r = cuda_release(&[
+        "llama-b9-bin-win-cuda-12.8-x64.zip",
+        "cudart-llama-bin-win-cuda-11.8-x64.zip",
+        "llama-b9-bin-win-cuda-12.6-arm64.zip",
+        "cudart-llama-bin-win-cuda-12.6-arm64.zip",
+        "llama-b9-bin-macos-cuda-12.2-x64.zip",
+        "llama-b9-bin-win-cuda-abc-x64.zip",
+        "cudart-llama-bin-win-cuda-abc-x64.zip",
+    ]);
+    assert_eq!(cuda_variants(&r), vec![cv(13, 1), cv(12, 4)]);
+}
+
+#[test]
+fn cuda_variants_empty_without_any() {
+    assert!(cuda_variants(&rel("b9", &["llama-b9-bin-win-cpu-x64.zip"], None, "https://e")).is_empty());
+}
+
+fn cuda_pick(r: &Release, max: Option<CudaVer>) -> Result<Vec<String>, String> {
+    select_assets(r, "windows", "x86_64", Backend::Cuda, max).map(|v| v.into_iter().map(|a| a.name).collect())
+}
+
+#[test]
+fn select_cuda_driver_12_6_gets_12_4_pair() {
+    assert_eq!(
+        cuda_pick(&cuda_release(&[]), Some(cv(12, 6))).unwrap(),
+        vec!["llama-b9-bin-win-cuda-12.4-x64.zip", "cudart-llama-bin-win-cuda-12.4-x64.zip"]
+    );
+}
+
+#[test]
+fn select_cuda_driver_13_1_gets_13_1_pair() {
+    assert_eq!(
+        cuda_pick(&cuda_release(&[]), Some(cv(13, 1))).unwrap(),
+        vec!["llama-b9-bin-win-cuda-13.1-x64.zip", "cudart-llama-bin-win-cuda-13.1-x64.zip"]
+    );
+}
+
+#[test]
+fn select_cuda_none_picks_newest() {
+    assert_eq!(cuda_pick(&cuda_release(&[]), None).unwrap()[0], "llama-b9-bin-win-cuda-13.1-x64.zip");
+}
+
+#[test]
+fn select_cuda_driver_too_old_errs_mentioning_cuda() {
+    let err = cuda_pick(&cuda_release(&[]), Some(cv(11, 8))).unwrap_err();
+    assert!(err.contains("CUDA"), "{err}");
+}
+
+#[test]
+fn select_cuda_variant_without_cudart_is_not_offered() {
+    let mut r = cuda_release(&[]);
+    r.assets.retain(|a| a.name != "cudart-llama-bin-win-cuda-13.1-x64.zip");
+    assert_eq!(cuda_pick(&r, None).unwrap()[0], "llama-b9-bin-win-cuda-12.4-x64.zip");
+    assert_eq!(cuda_pick(&r, Some(cv(13, 1))).unwrap()[0], "llama-b9-bin-win-cuda-12.4-x64.zip");
+}
+
+#[test]
+fn pick_release_cuda_respects_max_and_falls_back_to_older_release() {
+    let mut newest = cuda_release(&[]);
+    newest.tag = "b10".into();
+    newest.assets.retain(|a| !a.name.contains("12.4"));
+    for a in &mut newest.assets {
+        a.name = a.name.replace("b9", "b10");
+    }
+    let older = cuda_release(&[]);
+    let got = pick_release(&[newest, older], "windows", "x86_64", Backend::Cuda, Some(cv(12, 6))).unwrap();
+    assert_eq!(names(&got), vec!["llama-b9-bin-win-cuda-12.4-x64.zip", "cudart-llama-bin-win-cuda-12.4-x64.zip"]);
 }

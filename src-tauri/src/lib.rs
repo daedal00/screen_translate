@@ -843,18 +843,23 @@ pub fn run() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![submit_region, close_window, get_last_result, get_live_lines, open_settings_window, settings::get_settings, settings::save_settings, settings::clear_api_key, manager::manager_status, manager::install_runtime, manager::download_model, manager::cancel_download, manager::delete_model, manager::start_server, manager::stop_server, manager::set_autostart])
+        .invoke_handler(tauri::generate_handler![submit_region, close_window, get_last_result, get_live_lines, open_settings_window, settings::get_settings, settings::save_settings, settings::clear_api_key, manager::manager_status, manager::install_runtime, manager::download_model, manager::download_catalog, manager::hf_search, manager::hf_files, manager::cancel_download, manager::delete_model, manager::start_server, manager::stop_server, manager::set_autostart])
         .setup(move |app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             app.global_shortcut().register(hotkey)?;
             app.global_shortcut().register(secondary_hotkey)?;
             create_overlays(app.handle())?;
+            manager::warm_hardware(app.handle());
             if settings::managed_autostart(app.handle())
                 && let Some(file) = settings::managed_model(app.handle())
-                && let Err(e) = manager::start(app.handle(), &file)
             {
-                log::warn!("managed server autostart failed: {e}");
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    if let Err(e) = manager::start(&handle, &file) {
+                        log::warn!("managed server autostart failed: {e}");
+                    }
+                });
             }
 
             let (main_label, secondary_label) = mode::tray_labels(settings::mode(app.handle()));

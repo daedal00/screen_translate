@@ -80,11 +80,11 @@ save.addEventListener("click", async () => {
 });
 
 // ---- Managed llama.cpp runtime, models and server ----
-type ServerStatus = { state: "stopped" | "loading" | "ready" | "error"; model?: string; message?: string; log?: string[] };
+type ServerStatus = { state: "stopped" | "loading" | "ready" | "error"; model?: string; offload?: { device: string | null; layers: number; total: number } | null; message?: string; log?: string[] };
 type Info = {
   runtime: string | null;
   os: string;
-  catalog: { id: string; label: string; source: string; size: number }[];
+  catalog: { id: string; name: string; size: number }[];
   installed: { file: string; size: number }[];
   server: ServerStatus;
   base_url: string;
@@ -189,8 +189,8 @@ function render(i: Info) {
   if (catalogSel.options.length === 0) {
     for (const c of i.catalog) {
       const o = document.createElement("option");
-      o.value = c.source;
-      o.textContent = `${c.label} (${size(c.size)})`;
+      o.value = c.id;
+      o.textContent = `${c.name} (${size(c.size)})`;
       catalogSel.append(o);
     }
   }
@@ -259,7 +259,7 @@ function download(cmd: () => Promise<unknown>, done: string) {
 rtInstall.addEventListener("click", () =>
   download(() => invoke("install_runtime", { backend: rtBackend.hidden ? "cpu" : rtBackend.value }), "llama.cpp installed."),
 );
-dlCatalog.addEventListener("click", () => download(() => invoke("download_model", { source: catalogSel.value }), "Model downloaded."));
+dlCatalog.addEventListener("click", () => download(() => invoke("download_catalog", { id: catalogSel.value }), "Model downloaded."));
 dlCustom.addEventListener("click", () => {
   const source = custom.value.trim();
   if (!source) return;

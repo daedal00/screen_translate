@@ -1,11 +1,10 @@
-use std::collections::HashSet;
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
 
 use screen_translate_lib::manager::download::CANCELLED;
 use screen_translate_lib::manager::models::{
     delete_model, download_files, list_installed, models_dir, parse_source, pick_files, resolve, InstalledModel,
-    RemoteFile, Source, CATALOG,
+    RemoteFile, Source,
 };
 use serde_json::json;
 use wiremock::matchers::{method, path, query_param};
@@ -14,19 +13,6 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 const ABC_SHA: &str = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
 const BASE: &str = "https://huggingface.co";
 const REPO: &str = "bartowski/Qwen2.5-3B-Instruct-GGUF";
-
-#[test]
-fn catalog_is_valid() {
-    assert!(!CATALOG.is_empty());
-    let ids: HashSet<_> = CATALOG.iter().map(|m| m.id).collect();
-    assert_eq!(ids.len(), CATALOG.len(), "ids must be unique");
-    for m in CATALOG {
-        assert!(matches!(parse_source(m.source), Ok(Source::Hf { .. })), "{}", m.source);
-    }
-    assert!(CATALOG.windows(2).all(|w| w[0].size <= w[1].size), "sorted by size ascending");
-    assert!(CATALOG.iter().any(|m| m.source.contains("3B")));
-    assert!(CATALOG.iter().any(|m| m.source.contains("7B")));
-}
 
 #[test]
 fn parse_source_hf() {

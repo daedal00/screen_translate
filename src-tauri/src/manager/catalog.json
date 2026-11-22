@@ -1,0 +1,26 @@
+[
+  {
+    "id": "qwen2.5-3b",
+    "name": "Qwen2.5 3B Instruct",
+    "description": "Fast and light. Rougher translations, runs on almost any machine.",
+    "repo": "bartowski/Qwen2.5-3B-Instruct-GGUF",
+    "file": "Qwen2.5-3B-Instruct-Q4_K_M.gguf",
+    "size": 1929903264,
+    "sha256": "9c9f56a391a3abbd5b89d0245bf6106081bcc3173119d4229235dd9d23253f94",
+    "min_vram": 3500000000,
+    "tags": ["fast", "small"],
+    "prompt_template": "default"
+  },
+  {
+    "id": "qwen2.5-7b",
+    "name": "Qwen2.5 7B Instruct",
+    "description": "Better translations. Wants a GPU with about 6 GB of memory for full speed.",
+    "repo": "bartowski/Qwen2.5-7B-Instruct-GGUF",
+    "file": "Qwen2.5-7B-Instruct-Q4_K_M.gguf",
+    "size": 4683074240,
+    "sha256": "65b8fcd92af6b4fefa935c625d1ac27ea29dcb6ee14589c55a8f115ceaaa1423",
+    "min_vram": 6500000000,
+    "tags": ["balanced"],
+    "prompt_template": "default"
+  }
+]

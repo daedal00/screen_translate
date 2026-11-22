@@ -9,6 +9,8 @@ use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use super::runtime::Backend;
+
 pub const HOST: &str = "127.0.0.1";
 /// Fixed and away from llama-server's default 8080, so a user's own server keeps working beside it.
 pub const PORT: u16 = 18080;
@@ -26,9 +28,21 @@ pub fn base_url() -> String {
     format!("http://{HOST}:{PORT}")
 }
 
-/// `["-m", <model>, "--host", HOST, "--port", PORT, "-c", CONTEXT]`.
-pub fn server_args(model: &Path) -> Vec<OsString> {
-    vec![
+/// GPU flags for `os` given the installed backend (None: unknown, e.g. a llama-server from PATH). The bundled
+/// build defaults to `-ngl auto --fit on`, which fits the model against the device's free memory, so no flag
+/// forces offloading. Only a recorded CPU install on Windows turns it off (`-ngl 0`); CUDA gets `-fa on`.
+pub fn gpu_args(os: &str, backend: Option<Backend>) -> Vec<String> {
+    match backend {
+        Some(Backend::Cpu) if os == "windows" => vec!["-ngl".into(), "0".into()],
+        Some(Backend::Cuda) => vec!["-fa".into(), "on".into()],
+        _ => vec![],
+    }
+}
+
+/// `["-m", <model>, "--host", HOST, "--port", PORT, "-c", CONTEXT, "-lv", "4"]` then `gpu`. Verbosity 4 is
+/// needed: the bundled build only logs which device and how many layers it offloaded at that level.
+pub fn server_args(model: &Path, gpu: &[String]) -> Vec<OsString> {
+    let mut args: Vec<OsString> = vec![
         "-m".into(),
         model.into(),
         "--host".into(),
@@ -37,7 +51,60 @@ pub fn server_args(model: &Path) -> Vec<OsString> {
         PORT.to_string().into(),
         "-c".into(),
         CONTEXT.to_string().into(),
-    ]
+        "-lv".into(),
+        "4".into(),
+    ];
+    args.extend(gpu.iter().map(OsString::from));
+    args
+}
+
+/// Where the model was loaded, from llama-server's startup log.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+pub struct Offload {
+    /// GPU name, e.g. "Apple M1 Pro".
+    pub device: Option<String>,
+    pub layers: u32,
+    pub total: u32,
+}
+
+/// Updates `acc` from one log line: `... using device MTL0 (Apple M1 Pro) (...)` sets the device,
+/// `... offloaded 33/33 layers to GPU` sets the layer counts. Other lines change nothing.
+pub fn parse_offload_line(line: &str, acc: &mut Option<Offload>) {
+    let new = || Offload { device: None, layers: 0, total: 0 };
+    if let Some(rest) = line.split_once("using device ").map(|(_, r)| r)
+        && let Some((_, rest)) = rest.split_once(" (")
+        && let Some((name, _)) = rest.split_once(')')
+    {
+        acc.get_or_insert_with(new).device = Some(name.to_string());
+    } else if let Some(rest) = line.split_once("offloaded ").map(|(_, r)| r)
+        && let Some((counts, tail)) = rest.split_once(' ')
+        && tail.starts_with("layers to GPU")
+        && let Some((layers, total)) = counts.split_once('/')
+        && let (Ok(layers), Ok(total)) = (layers.parse(), total.parse())
+    {
+        let o = acc.get_or_insert_with(new);
+        (o.layers, o.total) = (layers, total);
+    }
+}
+
+/// How the child ended, as far as the log shows.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Exit {
+    pub code: Option<i32>,
+    /// The log named a GPU device (`using device CUDA0 (...)`), so the GPU runtime did come up.
+    pub device_seen: bool,
+}
+
+/// Windows exit code of a process whose DLL (the CUDA runtime) is missing.
+const STATUS_DLL_NOT_FOUND: i32 = -1073741515;
+
+/// True when a CUDA build exited while loading and CUDA itself looks to blame: no GPU device was ever named in
+/// its log, or the exit was a missing DLL. Any other failure (bad GGUF, out of memory) keeps the CUDA build.
+pub fn should_fallback_to_vulkan(os: &str, backend: Backend, status_before: &Status, exit: Option<&Exit>) -> bool {
+    os == "windows"
+        && backend == Backend::Cuda
+        && matches!(status_before, Status::Loading { .. })
+        && exit.is_some_and(|e| !e.device_seen || e.code == Some(STATUS_DLL_NOT_FOUND))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
@@ -45,7 +112,8 @@ pub fn server_args(model: &Path) -> Vec<OsString> {
 pub enum Status {
     Stopped,
     Loading { model: String },
-    Ready { model: String },
+    /// `offload` is where the model was loaded, when the log said so.
+    Ready { model: String, offload: Option<Offload> },
     /// `log` is raw child output (it can echo prompt text): send it to the UI, never to `log::` or `Debug` output.
     Error { message: String, log: Vec<String> },
 }
@@ -75,7 +143,7 @@ pub enum Event {
 pub fn next(status: &Status, event: Event) -> Status {
     match (event, status) {
         (Event::Started { model }, _) => Status::Loading { model },
-        (Event::Health(Some(200)), Status::Loading { model }) => Status::Ready { model: model.clone() },
+        (Event::Health(Some(200)), Status::Loading { model }) => Status::Ready { model: model.clone(), offload: None },
         (Event::Exited { code, log }, Status::Loading { .. } | Status::Ready { .. }) => Status::Error {
             message: match code {
                 Some(c) => format!("llama-server exited (code {c})"),
@@ -91,21 +159,37 @@ pub fn next(status: &Status, event: Event) -> Status {
     }
 }
 
+/// True for a llama.cpp log line tagged info: `<timestamp> I <text>`.
+fn is_info(line: &str) -> bool {
+    let mut t = line.split_whitespace();
+    matches!((t.next(), t.next()), (Some(ts), Some("I")) if ts.starts_with(|c: char| c.is_ascii_digit()))
+}
+
 /// The last `cap` lines of child output, in memory only (never written to the app log: it can echo prompts).
 pub struct LogTail {
     cap: usize,
     lines: VecDeque<String>,
+    /// Parsed from every pushed line, so it survives the tail dropping old lines.
+    offload: Option<Offload>,
+    /// Once set, info-level lines are not kept: at `-lv 4` every request logs dozens of them and would push the
+    /// lines that explain a later crash out of the tail.
+    ready: bool,
 }
 
 impl LogTail {
     pub fn new(cap: usize) -> Self {
-        Self { cap, lines: VecDeque::new() }
+        Self { cap, lines: VecDeque::new(), offload: None, ready: false }
     }
 
     /// Trims trailing whitespace; skips empty lines; keeps at most `MAX_LINE_BYTES` bytes of a line (cut on a char boundary).
+    /// Every line is also scanned for offload info.
     pub fn push(&mut self, line: &str) {
         let line = line.trim_end();
         if line.is_empty() {
+            return;
+        }
+        parse_offload_line(line, &mut self.offload);
+        if self.ready && is_info(line) {
             return;
         }
         let line = &line[..line.floor_char_boundary(MAX_LINE_BYTES)];
@@ -113,6 +197,15 @@ impl LogTail {
         while self.lines.len() > self.cap {
             self.lines.pop_front();
         }
+    }
+
+    /// From now on only lines that are not info-level are kept.
+    pub fn mark_ready(&mut self) {
+        self.ready = true;
+    }
+
+    pub fn offload(&self) -> Option<Offload> {
+        self.offload.clone()
     }
 
     pub fn lines(&self) -> Vec<String> {
@@ -128,6 +221,8 @@ struct Inner {
     /// Bumped on every start and stop, so a monitor thread from an old run goes quiet.
     generation: u64,
     on_change: Option<OnChange>,
+    /// How the last child ended on its own; set just before the Error status is notified.
+    exit: Option<Exit>,
 }
 
 struct Core {
@@ -201,13 +296,19 @@ impl Default for Server {
 }
 
 /// Applies `event` unless a newer run or a stop superseded `generation`; notifies on change.
-fn apply(core: &Core, generation: u64, event: Event) -> bool {
+/// A Loading -> Ready transition takes the offload info from `log`.
+fn apply(core: &Core, generation: u64, log: &Mutex<LogTail>, event: Event) -> bool {
     {
         let mut g = core.inner.lock().unwrap();
         if g.generation != generation {
             return false;
         }
-        let new = next(&g.status, event);
+        let mut new = next(&g.status, event);
+        if let (Status::Loading { .. }, Status::Ready { offload, .. }) = (&g.status, &mut new) {
+            let mut tail = log.lock().unwrap();
+            tail.mark_ready();
+            *offload = tail.offload();
+        }
         if new == g.status {
             return true;
         }
@@ -245,7 +346,7 @@ fn wait_readers(done: &mpsc::Receiver<()>, count: usize) {
 
 impl Server {
     pub fn new() -> Self {
-        let inner = Inner { status: Status::Stopped, child: None, generation: 0, on_change: None };
+        let inner = Inner { status: Status::Stopped, child: None, generation: 0, on_change: None, exit: None };
         Self {
             core: Arc::new(Core { inner: Mutex::new(inner), notify: Mutex::new(()) }),
             #[cfg(windows)]
@@ -283,6 +384,7 @@ impl Server {
         }
         g.generation += 1;
         let generation = g.generation;
+        g.exit = None;
         g.on_change = Some(Arc::new(on_change));
 
         let mut cmd = Command::new(exe);
@@ -329,6 +431,16 @@ impl Server {
         let core = self.core.clone();
         std::thread::spawn(move || monitor(core, generation, (done_rx, readers), log, health_url, client, poll, load_timeout));
         Ok(())
+    }
+
+    /// Counter bumped by every start and stop: lets a caller tell that the user acted since it captured it.
+    pub fn generation(&self) -> u64 {
+        self.core.inner.lock().unwrap().generation
+    }
+
+    /// How the child of the current run exited on its own, if it did.
+    pub fn last_exit(&self) -> Option<Exit> {
+        self.core.inner.lock().unwrap().exit.clone()
     }
 
     /// Kills and reaps the child if any, then Stopped (on_change of the current run is notified).
@@ -379,8 +491,17 @@ fn monitor(
                 g.child = None;
                 drop(g);
                 wait_readers(&readers.0, readers.1);
-                let lines = log.lock().unwrap().lines();
-                apply(&core, generation, Event::Exited { code: st.code(), log: lines });
+                let (lines, device_seen) = {
+                    let tail = log.lock().unwrap();
+                    (tail.lines(), tail.offload().is_some_and(|o| o.device.is_some()))
+                };
+                {
+                    let mut g = core.inner.lock().unwrap();
+                    if g.generation == generation {
+                        g.exit = Some(Exit { code: st.code(), device_seen });
+                    }
+                }
+                apply(&core, generation, &log, Event::Exited { code: st.code(), log: lines });
                 return;
             }
             loading
@@ -391,7 +512,7 @@ fn monitor(
         let code = tauri::async_runtime::block_on(async { client.get(&health_url).timeout(Duration::from_secs(2)).send().await })
             .ok()
             .map(|r| r.status().as_u16());
-        if !apply(&core, generation, Event::Health(code)) {
+        if !apply(&core, generation, &log, Event::Health(code)) {
             return;
         }
         if Instant::now() >= deadline {
@@ -409,7 +530,7 @@ fn monitor(
             }
             wait_readers(&readers.0, readers.1);
             let lines = log.lock().unwrap().lines();
-            apply(&core, generation, Event::TimedOut { log: lines });
+            apply(&core, generation, &log, Event::TimedOut { log: lines });
             return;
         }
     }

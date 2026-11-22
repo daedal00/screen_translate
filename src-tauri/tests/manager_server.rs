@@ -1,6 +1,9 @@
 use std::path::Path;
 
-use screen_translate_lib::manager::server::{base_url, next, server_args, Event, LogTail, Status};
+use screen_translate_lib::manager::runtime::Backend;
+use screen_translate_lib::manager::server::{
+    base_url, gpu_args, next, parse_offload_line, server_args, should_fallback_to_vulkan, Event, Exit, LogTail, Offload, Status,
+};
 use serde_json::json;
 
 #[test]
@@ -10,15 +13,22 @@ fn base_url_is_managed_port() {
 
 #[test]
 fn server_args_exact() {
-    let got: Vec<String> = server_args(Path::new("/m/x.gguf")).iter().map(|a| a.to_string_lossy().into_owned()).collect();
-    assert_eq!(got, vec!["-m", "/m/x.gguf", "--host", "127.0.0.1", "--port", "18080", "-c", "4096"]);
+    let got: Vec<String> = server_args(Path::new("/m/x.gguf"), &[]).iter().map(|a| a.to_string_lossy().into_owned()).collect();
+    assert_eq!(got, vec!["-m", "/m/x.gguf", "--host", "127.0.0.1", "--port", "18080", "-c", "4096", "-lv", "4"]);
+}
+
+#[test]
+fn server_args_appends_gpu_args_last() {
+    let gpu = vec!["-ngl".to_string(), "99".to_string()];
+    let got: Vec<String> = server_args(Path::new("/m/x.gguf"), &gpu).iter().map(|a| a.to_string_lossy().into_owned()).collect();
+    assert_eq!(&got[got.len() - 4..], ["-lv", "4", "-ngl", "99"]);
 }
 
 fn loading() -> Status {
     Status::Loading { model: "m".into() }
 }
 fn ready() -> Status {
-    Status::Ready { model: "m".into() }
+    Status::Ready { model: "m".into(), offload: None }
 }
 fn err() -> Status {
     Status::Error { message: "boom".into(), log: vec!["l".into()] }
@@ -105,7 +115,7 @@ fn next_stopped_from_any_state() {
 #[test]
 fn status_serde_shapes() {
     assert_eq!(serde_json::to_value(Status::Stopped).unwrap(), json!({ "state": "stopped" }));
-    assert_eq!(serde_json::to_value(Status::Ready { model: "m".into() }).unwrap(), json!({ "state": "ready", "model": "m" }));
+    assert_eq!(serde_json::to_value(Status::Ready { model: "m".into(), offload: None }).unwrap(), json!({ "state": "ready", "model": "m", "offload": null }));
     assert_eq!(serde_json::to_value(loading()).unwrap(), json!({ "state": "loading", "model": "m" }));
     assert_eq!(
         serde_json::to_value(err()).unwrap(),
@@ -165,7 +175,7 @@ mod process {
     use std::sync::{Arc, Mutex};
     use std::time::{Duration, Instant};
 
-    use screen_translate_lib::manager::server::{Server, Status};
+    use screen_translate_lib::manager::server::{Exit, Server, Status};
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -259,6 +269,39 @@ mod process {
     }
 
     #[tokio::test(flavor = "multi_thread")]
+    async fn ready_carries_offload_parsed_from_child_output() {
+        let _guard = lock();
+        let dir = tempfile::tempdir().unwrap();
+        let exe = script(
+            dir.path(),
+            "srv",
+            "echo '0.00.1 I llama_prepare_model_devices: using device CUDA0 (NVIDIA GeForce RTX 3070) (0000:01:00.0) - 7100 MiB free'\n\
+             echo '0.01.0 I load_tensors: offloaded 20/33 layers to GPU' >&2\nexec sleep 30",
+        );
+        let health = health_mock(2).await;
+        let server = Server::new();
+        let (r, _) = start(&server, &exe, format!("{}/health", health.uri()), LONG);
+        r.unwrap();
+        let s = wait_for(&server, "ready", |s| matches!(s, Status::Ready { .. })).await;
+        let Status::Ready { offload, .. } = s else { unreachable!() };
+        assert_eq!(offload, super::off(Some("NVIDIA GeForce RTX 3070"), 20, 33));
+        server.stop();
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn exit_while_loading_records_exit_evidence() {
+        let _guard = lock();
+        let dir = tempfile::tempdir().unwrap();
+        let exe = script(dir.path(), "srv", "echo '0.00.1 I llama_prepare_model_devices: using device CUDA0 (RTX) (x) - 1 MiB free'\nexit 7");
+        let health = always_503().await;
+        let server = Server::new();
+        let (r, _) = start(&server, &exe, format!("{}/health", health.uri()), LONG);
+        r.unwrap();
+        wait_for(&server, "error", |s| matches!(s, Status::Error { .. })).await;
+        assert_eq!(server.last_exit(), Some(Exit { code: Some(7), device_seen: true }));
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
     async fn exit_with_code_becomes_error_with_log() {
         let _guard = lock();
         let dir = tempfile::tempdir().unwrap();
@@ -288,7 +331,7 @@ mod process {
         assert_eq!(server.status(), Status::Loading { model: "m.gguf".into() });
 
         wait_for(&server, "ready", |s| matches!(s, Status::Ready { .. })).await;
-        assert_eq!(server.status(), Status::Ready { model: "m.gguf".into() });
+        assert_eq!(server.status(), Status::Ready { model: "m.gguf".into(), offload: None });
         {
             let seen = changes.lock().unwrap();
             let li = seen.iter().position(|s| matches!(s, Status::Loading { .. })).expect("Loading notified");
@@ -477,3 +520,154 @@ mod process {
         assert!(seen.iter().any(|s| matches!(s, Status::Ready { .. })), "should have been Ready first: {seen:?}");
     }
 }
+
+// ---- gpu_args -----------------------------------------------------------------------------
+
+fn gpu(os: &str, b: Option<Backend>) -> Vec<String> {
+    gpu_args(os, b)
+}
+
+#[test]
+fn gpu_args_never_force_offload_layers() {
+    // The bundled build's `-ngl auto --fit on` measures free device memory; only a recorded CPU install overrides it.
+    for os in ["macos", "windows"] {
+        for b in [None, Some(Backend::Vulkan)] {
+            assert!(gpu(os, b).is_empty(), "{os} {b:?}");
+        }
+    }
+    assert!(gpu("macos", Some(Backend::Cpu)).is_empty());
+}
+
+#[test]
+fn gpu_args_windows_cpu_disables_offload() {
+    assert_eq!(gpu("windows", Some(Backend::Cpu)), vec!["-ngl", "0"]);
+}
+
+#[test]
+fn gpu_args_cuda_adds_flash_attention_only() {
+    assert_eq!(gpu("windows", Some(Backend::Cuda)), vec!["-fa", "on"]);
+}
+
+// ---- offload log parsing ------------------------------------------------------------------
+
+fn feed(lines: &[&str]) -> Option<Offload> {
+    let mut acc = None;
+    for l in lines {
+        parse_offload_line(l, &mut acc);
+    }
+    acc
+}
+
+fn off(device: Option<&str>, layers: u32, total: u32) -> Option<Offload> {
+    Some(Offload { device: device.map(String::from), layers, total })
+}
+
+#[test]
+fn offload_device_metal() {
+    let got = feed(&["0.00.198.046 I llama_prepare_model_devices: using device MTL0 (Apple M1 Pro) (unknown id) - 12123 MiB free"]);
+    assert_eq!(got.and_then(|o| o.device), Some("Apple M1 Pro".to_string()));
+}
+
+#[test]
+fn offload_device_cuda_and_vulkan_without_timestamp() {
+    let c = feed(&["llama_prepare_model_devices: using device CUDA0 (NVIDIA GeForce RTX 3070) (0000:01:00.0) - 7100 MiB free"]);
+    assert_eq!(c.and_then(|o| o.device), Some("NVIDIA GeForce RTX 3070".to_string()));
+    let v = feed(&["0.00.1 I llama_prepare_model_devices: using device Vulkan0 (AMD Radeon RX 6800 XT) (0000:03:00.0) - 16000 MiB free"]);
+    assert_eq!(v.and_then(|o| o.device), Some("AMD Radeon RX 6800 XT".to_string()));
+}
+
+#[test]
+fn offload_layers_creates_acc() {
+    assert_eq!(feed(&["0.01.020.998 I load_tensors: offloaded 33/33 layers to GPU"]), off(None, 33, 33));
+    assert_eq!(feed(&["load_tensors: offloaded 20/33 layers to GPU"]), off(None, 20, 33));
+}
+
+#[test]
+fn offload_device_then_layers_combine() {
+    let got = feed(&[
+        "0.00.1 I llama_prepare_model_devices: using device CUDA0 (NVIDIA GeForce RTX 3070) (0000:01:00.0) - 7100 MiB free",
+        "0.01.0 I load_tensors: offloaded 20/33 layers to GPU",
+    ]);
+    assert_eq!(got, off(Some("NVIDIA GeForce RTX 3070"), 20, 33));
+}
+
+#[test]
+fn offload_unrelated_lines_leave_acc_unchanged() {
+    assert_eq!(feed(&["srv  llama_server: initializing ...", "", "using device", "offloaded x/y layers"]), None);
+    let mut acc = off(Some("X"), 1, 2);
+    parse_offload_line("0.0.1 I main: server is listening", &mut acc);
+    assert_eq!(acc, off(Some("X"), 1, 2));
+}
+
+#[test]
+fn offload_real_metal_log() {
+    let log = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/llama-server-metal-lv4.log")).unwrap();
+    let mut acc = None;
+    for l in log.lines() {
+        parse_offload_line(l, &mut acc);
+    }
+    assert_eq!(acc, off(Some("Apple M1 Pro"), 33, 33));
+}
+
+// ---- vulkan fallback ----------------------------------------------------------------------
+
+fn exit(code: Option<i32>, device_seen: bool) -> Exit {
+    Exit { code, device_seen }
+}
+
+#[test]
+fn fallback_when_cuda_never_came_up() {
+    assert!(should_fallback_to_vulkan("windows", Backend::Cuda, &loading(), Some(&exit(Some(1), false))));
+    assert!(should_fallback_to_vulkan("windows", Backend::Cuda, &loading(), Some(&exit(None, false))));
+}
+
+#[test]
+fn fallback_on_missing_dll_even_if_a_device_was_seen() {
+    assert!(should_fallback_to_vulkan("windows", Backend::Cuda, &loading(), Some(&exit(Some(-1073741515), true))));
+}
+
+#[test]
+fn no_fallback_when_cuda_worked_and_something_else_failed() {
+    // A bad GGUF or out-of-memory after the CUDA device was found must not swap the backend.
+    assert!(!should_fallback_to_vulkan("windows", Backend::Cuda, &loading(), Some(&exit(Some(1), true))));
+}
+
+#[test]
+fn no_fallback_elsewhere() {
+    let e = exit(Some(1), false);
+    assert!(!should_fallback_to_vulkan("macos", Backend::Cuda, &loading(), Some(&e)));
+    for b in [Backend::Cpu, Backend::Vulkan] {
+        assert!(!should_fallback_to_vulkan("windows", b, &loading(), Some(&e)));
+    }
+    for st in [ready(), Status::Stopped, err()] {
+        assert!(!should_fallback_to_vulkan("windows", Backend::Cuda, &st, Some(&e)));
+    }
+    // no exit (timeout, stop): nothing to fall back from
+    assert!(!should_fallback_to_vulkan("windows", Backend::Cuda, &loading(), None));
+}
+
+// ---- log tail after Ready -----------------------------------------------------------------
+
+#[test]
+fn log_tail_after_ready_keeps_only_non_info_lines_but_still_parses_offload() {
+    let mut t = LogTail::new(20);
+    t.push("0.00.1 I load_tensors: offloaded 33/33 layers to GPU");
+    t.mark_ready();
+    t.push("0.05.1 I slot launch_slot_: id  0 | task 0 | processing task");
+    t.push("0.05.2 I srv  log_server_r: done request: POST /v1/chat/completions 127.0.0.1 200");
+    t.push("0.05.3 W srv  something odd");
+    t.push("0.05.4 E ggml_cuda: out of memory");
+    t.push("plain untagged line");
+    assert_eq!(
+        t.lines(),
+        vec![
+            "0.00.1 I load_tensors: offloaded 33/33 layers to GPU",
+            "0.05.3 W srv  something odd",
+            "0.05.4 E ggml_cuda: out of memory",
+            "plain untagged line",
+        ]
+    );
+    t.push("0.06.0 I load_tensors: offloaded 1/2 layers to GPU");
+    assert_eq!(t.offload(), off(None, 1, 2));
+}
+

@@ -433,9 +433,12 @@ fn delete_rejects_unsafe_names_even_when_the_file_exists() {
         "a .gguf",
         "a..gguf",
     ] {
-        write(dir.path(), bad, 1);
+        // Windows refuses to create most of these names; the rejection must hold either way.
+        let created = std::fs::write(dir.path().join(bad), [0u8]).is_ok();
         assert!(delete_model(dir.path(), bad).is_err(), "should reject {bad:?}");
-        assert!(dir.path().join(bad).exists(), "{bad:?} must not be deleted");
+        if created {
+            assert!(dir.path().join(bad).exists(), "{bad:?} must not be deleted");
+        }
     }
 }
 

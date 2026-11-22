@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "live",
+  "description": "Capability for the live overlay (listens for lines, error and clear events)",
+  "windows": ["live"],
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten"]
+}

@@ -44,9 +44,35 @@ The transparent selector needs Tauri's `macOSPrivateApi`, which makes the app in
 
 ## Local model mode
 
-Translate with a model running on your own computer instead of DeepL: no account, no API key, and the captured text never leaves your machine. The app talks to [llama.cpp](https://github.com/ggml-org/llama.cpp)'s `llama-server` (any OpenAI-compatible server works). Local models are slower than DeepL, and you need a few GB of free disk and memory.
+Pick "Local model" as the provider in Settings to translate with a local model instead of DeepL: no account or API key, and the captured text never leaves your machine. You need a few GB of free disk and memory. The app can install and run [llama.cpp](https://github.com/ggml-org/llama.cpp) for you:
 
-### 1. Install llama.cpp
+1. In Settings, choose provider "Local model" on the **General** tab and press Save.
+2. Open the **Models** tab. It shows your GPU (or Apple chip) and memory, and how large a model runs fully on your GPU.
+3. If llama.cpp is missing, click **Install llama.cpp**. The app picks the right build for your GPU (CUDA for NVIDIA, Vulkan for AMD and Intel, CPU otherwise; Metal is built in on macOS). On Windows you can override it.
+4. Download one of the **Recommended for you** models, or search Hugging Face for any GGUF model and pick a quantization (each shows whether it fits your GPU). A custom `owner/repo:quant` or https `.gguf` URL is under **Advanced**.
+5. Click **Use** next to an installed model. When it is ready, the status shows how much of the model runs on the GPU, and the Server URL is filled in for you.
+6. Optionally tick "Start the server when the app launches".
+
+#### Recommended models
+
+| Model | Size | Best for | Hardware |
+|---|---|---|---|
+| Gemma 4 12B (QAT) | 7.0 GB | Top translation quality | Macs with 16 GB, GPUs with 10 GB or more |
+| Hy-MT2 7B | 4.6 GB | Translation-tuned, best for 8 GB GPUs | 8 GB GPUs, Macs with 16 GB |
+| Hy-MT2 1.8B | 1.1 GB | Very fast, close to the 7B quality | Any GPU, or CPU only |
+| Qwen3 8B | 5.0 GB | General-purpose, standard open license | 8 GB GPUs, Macs with 16 GB |
+
+Chosen by the benchmark in [`bench/`](bench/) (COMET on FLORES-200 and screen-style text, Japanese, Korean, French, German and Spanish to English). Quality numbers should transfer to other machines; speed will not (it was measured on an M1 Pro with 16 GB). The Hy-MT2 models use Tencent's license, so check its territory terms before relying on them.
+
+Large downloads use several connections in parallel and are verified with SHA-256 when Hugging Face publishes a checksum.
+
+Files live in the app data directory: `~/Library/Application Support/com.screentranslate.app/` on macOS and `%APPDATA%\com.screentranslate.app\` on Windows, in `llama/` (the runtime) and `models/`. The managed server listens only on `127.0.0.1:18080`. Port 18080 is reserved for it, so don't run your own server there. Local models are slower than DeepL; the first request after startup may be slow.
+
+### Manual setup
+
+To run your own server instead, any OpenAI-compatible one works. These steps use llama.cpp's `llama-server`; you need a few GB of free disk and memory.
+
+#### 1. Install llama.cpp
 
 **macOS** (Apple Silicon recommended; uses the GPU automatically), with [Homebrew](https://brew.sh):
 
@@ -64,7 +90,7 @@ Close and reopen PowerShell afterwards so `llama-server` is on your PATH. For th
 
 Check it worked: `llama-server --version` prints a version.
 
-### 2. Pick a model
+#### 2. Pick a model
 
 Pick the largest model that fits in your GPU's memory (VRAM), or in unified memory on a Mac (leave room for your other apps). Bigger models translate more naturally, especially Japanese, Chinese and Korean. All of these are Qwen 2.5 Instruct (strong at CJK) at Q4_K_M quantization:
 
@@ -77,7 +103,7 @@ Pick the largest model that fits in your GPU's memory (VRAM), or in unified memo
 
 Avoid reasoning models (Qwen3, DeepSeek-R1): they think before answering, which adds seconds per translation.
 
-### 3. Download and load the model
+#### 3. Download and load the model
 
 Start the server with the model you picked (same command on macOS and Windows):
 
@@ -91,7 +117,7 @@ llama-server -hf Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M -c 4096
 - **Keep this terminal open** while you use Screen Translate. Press `Ctrl+C` to stop the server, and run the same command again next time.
 - To switch models, stop the server and start it with a different `-hf` value. To use a `.gguf` file you downloaded yourself, run `llama-server -m path\to\model.gguf -c 4096` instead.
 
-### 4. Point Screen Translate at it
+#### 4. Point Screen Translate at it
 
 1. Open **Settings** from the tray icon.
 2. Set **Provider** to **Local model (llama.cpp)**.
@@ -100,7 +126,7 @@ llama-server -hf Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M -c 4096
 
 **Ollama** also works: set the URL to `http://127.0.0.1:11434` and enter a model name such as `qwen2.5:7b`.
 
-### Troubleshooting
+#### Troubleshooting
 
 - **"Local model server is not running"**: llama-server isn't started, or is still loading. Check its terminal for the `listening` line.
 - **Very slow translations**: the model doesn't fit in GPU memory. Pick a smaller one from the table. On Windows, make sure you use the CUDA or Vulkan build, not a CPU-only one.

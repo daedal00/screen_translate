@@ -1,5 +1,6 @@
 pub mod capture;
 pub mod live;
+pub mod manager;
 pub mod mode;
 pub mod ocr;
 pub mod popup;
@@ -156,8 +157,9 @@ fn open_settings(app: &AppHandle) -> Result<(), String> {
     }
     WebviewWindowBuilder::new(app, "settings", WebviewUrl::App("settings.html".into()))
         .title("Screen Translate Settings")
-        .inner_size(420.0, 520.0)
-        .resizable(false)
+        .inner_size(720.0, 680.0)
+        .min_inner_size(560.0, 520.0)
+        .resizable(true)
         .build()
         .map(|_| ())
         .map_err(|e| e.to_string())
@@ -400,13 +402,30 @@ async fn translate_text(
     let target = settings::target_lang(app);
     let provider = settings::provider(app);
     let (url, model) = (settings::local_url(app), settings::local_model(app));
-    // Provider, server URL and model are part of the cache key, so switching any never serves stale results.
-    let cache_target = if provider == "local" { format!("local:{url}:{model}:{target}") } else { target.clone() };
+    // On the managed server the model file picks the prompt template (and is part of the cache key).
+    let managed = (provider == "local" && manager::is_managed_url(&url))
+        .then(|| settings::managed_model(app))
+        .flatten();
+    let template = managed
+        .as_deref()
+        .and_then(|f| manager::catalog::by_file(manager::catalog::entries(), f))
+        .map_or(translate::local::Template::Default, |e| translate::local::Template::from_id(&e.prompt_template));
+    // Provider, server URL, model and managed file are part of the cache key, so switching any never serves stale results.
+    let cache_target = if provider == "local" {
+        format!("local:{url}:{model}:{}:{target}", managed.as_deref().unwrap_or(""))
+    } else {
+        target.clone()
+    };
     if let Some(t) = cache.lock().ok().and_then(|mut c| c.get(&cache_target, text)) {
         return Ok((t, true));
     }
+    if provider == "local"
+        && let Some(msg) = manager::managed_not_ready(&url, &app.state::<manager::ManagerState>().server.status())
+    {
+        return Err(msg.into());
+    }
     let t = if provider == "local" {
-        Local::new(url, model, http.local.clone()).translate(text, &target).await?
+        Local::new(url, model, http.local.clone()).with_template(template).translate(text, &target).await?
     } else {
         let Some(key) = settings::api_key() else {
             log::warn!("no DeepL API key set");
@@ -820,6 +839,7 @@ pub fn run() {
         .manage(Latest::default())
         .manage(LiveSelect::default())
         .manage(Live::default())
+        .manage(manager::ManagerState::default())
         .manage(Http { deepl: translate::deepl::http_client(), local: translate::local::http_client() })
         .manage(Cache(Mutex::new(TranslationCache::new(256))))
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -836,13 +856,24 @@ pub fn run() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![submit_region, close_window, get_last_result, get_live_lines, open_settings_window, settings::get_settings, settings::save_settings, settings::clear_api_key])
+        .invoke_handler(tauri::generate_handler![submit_region, close_window, get_last_result, get_live_lines, open_settings_window, settings::get_settings, settings::save_settings, settings::clear_api_key, manager::manager_status, manager::install_runtime, manager::download_model, manager::download_catalog, manager::hf_search, manager::hf_files, manager::cancel_download, manager::delete_model, manager::start_server, manager::stop_server, manager::set_autostart])
         .setup(move |app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             app.global_shortcut().register(hotkey)?;
             app.global_shortcut().register(secondary_hotkey)?;
             create_overlays(app.handle())?;
+            manager::warm_hardware(app.handle());
+            if settings::managed_autostart(app.handle())
+                && let Some(file) = settings::managed_model(app.handle())
+            {
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    if let Err(e) = manager::start(&handle, &file) {
+                        log::warn!("managed server autostart failed: {e}");
+                    }
+                });
+            }
 
             let (main_label, secondary_label) = mode::tray_labels(settings::mode(app.handle()));
             let main = MenuItem::with_id(app, "main", main_label, true, None::<&str>)?;
@@ -875,7 +906,10 @@ pub fn run() {
         })
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
-        .run(|_app, event| {
+        .run(|app, event| {
+            if let RunEvent::Exit = event {
+                app.state::<manager::ManagerState>().server.stop();
+            }
             // Tray app: closing the selector must not exit. Explicit `exit(0)` still quits.
             if let RunEvent::ExitRequested { api, code: None, .. } = event {
                 api.prevent_exit();

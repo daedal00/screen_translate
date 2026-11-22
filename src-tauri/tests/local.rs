@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use screen_translate_lib::settings::TARGETS;
-use screen_translate_lib::translate::local::{clean, http_client, language_name, Local, DEFAULT_BASE};
+use screen_translate_lib::translate::local::{clean, http_client, language_name, Local, Template, DEFAULT_BASE};
 use serde_json::{json, Value};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -419,4 +419,136 @@ async fn long_string_error_is_truncated() {
     let err = local(server.uri()).translate("hi", "DE").await.unwrap_err();
     assert!(err.contains(&"e".repeat(200)), "{err}");
     assert!(!err.contains(&"e".repeat(201)), "{err}");
+}
+
+#[test]
+fn template_from_id() {
+    assert_eq!(Template::from_id("hy-mt"), Template::HyMt);
+    assert_eq!(Template::from_id("default"), Template::Default);
+    assert_eq!(Template::from_id(""), Template::Default);
+    assert_eq!(Template::from_id("unknown"), Template::Default);
+    assert_eq!(Template::from_id("HY-MT"), Template::Default);
+}
+
+fn hy(base: String, model: &str) -> Local {
+    Local::new(base, model.to_string(), reqwest::Client::new()).with_template(Template::HyMt)
+}
+
+#[tokio::test]
+async fn hy_mt_request_is_one_user_message() {
+    let server = MockServer::start().await;
+    mount(&server, ok("Hello")).await;
+
+    let t = hy(server.uri(), "").translate("你好\nworld", "DE").await.unwrap();
+    assert_eq!(t.text, "Hello");
+
+    let body = first_body(&server).await;
+    assert!(body.get("model").is_none(), "{body}");
+    assert_eq!(body["stream"], json!(false));
+    assert_eq!(body["temperature"], json!(0));
+    let msgs = body["messages"].as_array().unwrap();
+    assert_eq!(msgs.len(), 1, "{body}");
+    assert_eq!(msgs[0]["role"], "user");
+    assert_eq!(
+        msgs[0]["content"],
+        "Translate the following text into German. Note that you should only output the translated result without any additional explanation:\n\n你好\nworld"
+    );
+}
+
+#[tokio::test]
+async fn hy_mt_request_names_non_english_target() {
+    let server = MockServer::start().await;
+    mount(&server, ok("こんにちは")).await;
+
+    hy(server.uri(), "").translate("Hello", "JA").await.unwrap();
+
+    let body = first_body(&server).await;
+    assert_eq!(
+        body["messages"][0]["content"],
+        "Translate the following text into Japanese. Note that you should only output the translated result without any additional explanation:\n\nHello"
+    );
+}
+
+#[tokio::test]
+async fn hy_mt_request_includes_model_when_set() {
+    let server = MockServer::start().await;
+    mount(&server, ok("Hallo")).await;
+
+    hy(server.uri(), MODEL).translate("hi", "DE").await.unwrap();
+
+    assert_eq!(first_body(&server).await["model"], MODEL);
+}
+
+#[tokio::test]
+async fn hy_mt_response_is_cleaned() {
+    let server = MockServer::start().await;
+    mount(&server, ok("<think>x</think>\n \"Hallo\" ")).await;
+
+    assert_eq!(hy(server.uri(), "").translate("hi", "DE").await.unwrap().text, "Hallo");
+}
+
+#[tokio::test]
+async fn hy_mt_blank_input_makes_no_request() {
+    let server = MockServer::start().await;
+    mount(&server, ok("x")).await;
+
+    assert_eq!(hy(server.uri(), "").translate("  ", "DE").await.unwrap().text, "");
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn explicit_default_template_matches_new() {
+    let server = MockServer::start().await;
+    mount(&server, ok("Hallo")).await;
+
+    Local::new(server.uri(), String::new(), reqwest::Client::new()).with_template(Template::Default).translate("hi", "DE").await.unwrap();
+
+    let msgs = first_body(&server).await["messages"].clone();
+    assert_eq!(msgs.as_array().unwrap().len(), 2);
+    assert_eq!(msgs[1]["content"], "<text>\nhi\n</text>");
+}
+
+#[test]
+fn clean_strips_balanced_text_wrapper() {
+    assert_eq!(clean("hi", "<text>Hallo</text>"), "Hallo");
+    assert_eq!(clean("hi", "  <text>\n Hallo \n</text>\n"), "Hallo");
+    assert_eq!(clean("hi", "<text>\nLine one\nLine two\n</text>"), "Line one\nLine two");
+}
+
+#[test]
+fn clean_strips_unbalanced_text_tags() {
+    assert_eq!(clean("hi", "<text>Hallo"), "Hallo");
+    assert_eq!(clean("hi", "Hallo</text>"), "Hallo");
+    assert_eq!(clean("hi", "<text>\nHallo\n"), "Hallo");
+}
+
+#[test]
+fn clean_keeps_text_wrapper_when_source_is_wrapped() {
+    assert_eq!(clean("<text>hi</text>", "<text>Hallo</text>"), "<text>Hallo</text>");
+    assert_eq!(clean("  <text>\nhi\n</text> ", "<text>\nHallo\n</text>"), "<text>\nHallo\n</text>");
+}
+
+#[test]
+fn clean_keeps_unbalanced_tag_the_source_has() {
+    assert_eq!(clean("<text>hi", "<text>Hallo"), "<text>Hallo");
+    assert_eq!(clean("hi</text>", "Hallo</text>"), "Hallo</text>");
+}
+
+#[test]
+fn clean_text_wrapper_after_think_and_label() {
+    assert_eq!(clean("hi", "<think>r</think><text>Hallo</text>"), "Hallo");
+    assert_eq!(clean("hi", "Translation: <text>Hallo</text>"), "Hallo");
+}
+
+#[test]
+fn clean_keeps_inner_text_tags_in_the_middle() {
+    assert_eq!(clean("hi", "Use <text> tags"), "Use <text> tags");
+}
+
+#[tokio::test]
+async fn default_response_strips_text_wrapper() {
+    let server = MockServer::start().await;
+    mount(&server, ok("<text>Hallo</text>")).await;
+
+    assert_eq!(local(server.uri()).translate("hi", "DE").await.unwrap().text, "Hallo");
 }

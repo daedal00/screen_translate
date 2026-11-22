@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .rex-team/
+bench/results/
+__pycache__/
+
+# playwright-cli session data
+.playwright-cli/

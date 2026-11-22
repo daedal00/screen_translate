@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Capability for the settings window (app commands are not gated)",
   "windows": ["settings"],
-  "permissions": []
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten"]
 }

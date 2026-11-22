@@ -1,0 +1,52 @@
+[
+  {
+    "id": "gemma-4-12b",
+    "name": "Gemma 4 12B (QAT)",
+    "description": "Top translation quality in our benchmark. Best on Macs and GPUs with 10 GB or more.",
+    "repo": "google/gemma-4-12B-it-qat-q4_0-gguf",
+    "file": "gemma-4-12b-it-qat-q4_0.gguf",
+    "size": 6975879296,
+    "sha256": "93567e57a8fe10b23569b9d9ec38cd005deedf71e29477c421a4b83f418a538b",
+    "min_vram": 9500000000,
+    "tags": ["quality"],
+    "prompt_template": "default"
+  },
+  {
+    "id": "hy-mt2-7b",
+    "name": "Hy-MT2 7B",
+    "description": "Translation-tuned, with near-top quality at a moderate size.",
+    "repo": "tencent/Hy-MT2-7B-GGUF",
+    "file": "Hy-MT2-7B-Q4_K_M.gguf",
+    "size": 4624648896,
+    "sha256": "9f96256500f3fc1ab4d64336b58f52a949a95ad7516b0c229476eef782f9f77b",
+    "min_vram": 6200000000,
+    "tags": ["translation"],
+    "prompt_template": "hy-mt",
+    "note": "Tencent license; check its territory terms."
+  },
+  {
+    "id": "hy-mt2-1.8b",
+    "name": "Hy-MT2 1.8B",
+    "description": "Small and very fast, with quality close to the 7B models.",
+    "repo": "tencent/Hy-MT2-1.8B-GGUF",
+    "file": "Hy-MT2-1.8B-Q4_K_M.gguf",
+    "size": 1133080448,
+    "sha256": "dc5f44fcf1fa496ee7ad725982c0c8c553a4de00259b53af84c4b89fb0c06699",
+    "min_vram": 2700000000,
+    "tags": ["fast", "small"],
+    "prompt_template": "hy-mt",
+    "note": "Tencent license; check its territory terms."
+  },
+  {
+    "id": "qwen3-8b",
+    "name": "Qwen3 8B",
+    "description": "General-purpose alternative with a standard open license.",
+    "repo": "Qwen/Qwen3-8B-GGUF",
+    "file": "Qwen3-8B-Q4_K_M.gguf",
+    "size": 5027783488,
+    "sha256": "d98cdcbd03e17ce47681435b5150e34c1417f50b5c0019dd560e4882c5745785",
+    "min_vram": 6600000000,
+    "tags": ["general"],
+    "prompt_template": "default"
+  }
+]

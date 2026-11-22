@@ -1,0 +1,125 @@
+{"id": "screen-jpn-001", "set": "screen", "lang": "jpn", "category": "ui", "src": "恐れ入りますが、ログインセッションの有効期限が切れました。再度ログインしてください。", "ref": "Sorry, but your login session has expired. Please log in again."}
+{"id": "screen-jpn-002", "set": "screen", "lang": "jpn", "category": "ui", "src": "変更を破棄しますか？\nこの操作は元に戻せません。", "ref": "Discard changes?\nThis cannot be undone."}
+{"id": "screen-jpn-003", "set": "screen", "lang": "jpn", "category": "ui", "src": "ご利用の端末では、この機能はサポートされておりません。", "ref": "This feature is not supported on your device."}
+{"id": "screen-jpn-004", "set": "screen", "lang": "jpn", "category": "ui", "src": "アカウントを削除すると、保存したデータはすべて失われます。続行しますか？", "ref": "If you delete your account, all saved data will be lost. Do you want to continue?"}
+{"id": "screen-jpn-005", "set": "screen", "lang": "jpn", "category": "menu", "src": "アクセシビリティ\nキャッシュをクリア\nデバイスの管理", "ref": "Accessibility\nClear cache\nManage devices"}
+{"id": "screen-jpn-006", "set": "screen", "lang": "jpn", "category": "menu", "src": "ホーム　お気に入り　ダウンロード　マイページ", "ref": "Home  Favorites  Downloads  My Page"}
+{"id": "screen-jpn-007", "set": "screen", "lang": "jpn", "category": "menu", "src": "言語と地域\n通知の設定\nストレージ使用量\nアプリについて", "ref": "Language & Region\nNotification Settings\nStorage Usage\nAbout This App"}
+{"id": "screen-jpn-008", "set": "screen", "lang": "jpn", "category": "menu", "src": "ゲストとして続ける\nアカウントを作成\nログイン", "ref": "Continue as guest\nCreate account\nLog in"}
+{"id": "screen-jpn-009", "set": "screen", "lang": "jpn", "category": "error", "src": "エラーが発生しました（コード：E-4021）。しばらくしてからもう一度お試しください。", "ref": "An error occurred (code: E-4021). Please try again later."}
+{"id": "screen-jpn-010", "set": "screen", "lang": "jpn", "category": "error", "src": "{filename} を開けませんでした。ファイルが破損している可能性があります。", "ref": "Could not open {filename}. The file may be corrupted."}
+{"id": "screen-jpn-011", "set": "screen", "lang": "jpn", "category": "error", "src": "ご入力のメールアドレスは既に登録されています。", "ref": "The email address you entered is already registered."}
+{"id": "screen-jpn-012", "set": "screen", "lang": "jpn", "category": "error", "src": "空き容量が不足しています（必要：4.2GB／残り：1.1GB）", "ref": "Not enough storage space (required: 4.2 GB / available: 1.1 GB)"}
+{"id": "screen-jpn-013", "set": "screen", "lang": "jpn", "category": "game", "src": "おぬし、その剣をどこで手に入れた？それは我が一族に伝わる宝剣じゃ。", "ref": "Where did you get that sword, young one? That is a treasured blade handed down in my clan."}
+{"id": "screen-jpn-014", "set": "screen", "lang": "jpn", "category": "game", "src": "HPが45回復した！", "ref": "Restored 45 HP!"}
+{"id": "screen-jpn-015", "set": "screen", "lang": "jpn", "category": "game", "src": "ミミックだった！\n勇者は120のダメージを受けた！", "ref": "It was a mimic!\nThe hero took 120 damage!"}
+{"id": "screen-jpn-016", "set": "screen", "lang": "jpn", "category": "game", "src": "魔法使いが仲間に加わった！\nレベルが8に上がった！", "ref": "A mage joined the party!\nReached level 8!"}
+{"id": "screen-jpn-017", "set": "screen", "lang": "jpn", "category": "chat", "src": "ごめん、電車遅れてて10分くらい遅刻しそう🙏", "ref": "Sorry, my train's delayed so I'll be about 10 minutes late 🙏"}
+{"id": "screen-jpn-018", "set": "screen", "lang": "jpn", "category": "chat", "src": "それな〜ｗｗｗ　今回まじで神回だった", "ref": "Totally lol. This episode was seriously amazing."}
+{"id": "screen-jpn-019", "set": "screen", "lang": "jpn", "category": "chat", "src": "田中さん、お疲れ様です。資料は明日の午前中までにお送りします。", "ref": "Hi Tanaka-san, I'll send you the materials by tomorrow morning."}
+{"id": "screen-jpn-020", "set": "screen", "lang": "jpn", "category": "signage", "src": "ご来店のお客様へ　ペットのご同伴はご遠慮ください", "ref": "Notice to customers: please refrain from bringing pets inside."}
+{"id": "screen-jpn-021", "set": "screen", "lang": "jpn", "category": "signage", "src": "全品25％オフ　12月25日まで", "ref": "25% off everything, through December 25"}
+{"id": "screen-jpn-022", "set": "screen", "lang": "jpn", "category": "signage", "src": "ただいま準備中です。しばらくお待ちください。", "ref": "Currently preparing to open. Please wait a moment."}
+{"id": "screen-jpn-023", "set": "screen", "lang": "jpn", "category": "manga", "src": "ドキドキ…どうしよう、顔が見れない…", "ref": "Thump thump... What do I do? I can't look at their face..."}
+{"id": "screen-jpn-024", "set": "screen", "lang": "jpn", "category": "manga", "src": "ゴゴゴゴ……！\nこの気配は一体……！？", "ref": "Rumble rumble...!\nWhat on earth is this presence...!?"}
+{"id": "screen-jpn-025", "set": "screen", "lang": "jpn", "category": "manga", "src": "くっ…体が動かねぇ…！　まだ終わるわけには…！", "ref": "Ugh... I can't move my body...! I can't let it end here yet...!"}
+{"id": "screen-kor-001", "set": "screen", "lang": "kor", "category": "ui", "src": "핸드폰 배터리가 얼마 안 남았어요. 절전 모드를 켜시겠어요?", "ref": "Your phone's battery is running low. Would you like to turn on battery saver?"}
+{"id": "screen-kor-002", "set": "screen", "lang": "kor", "category": "ui", "src": "변경 사항을 저장하지 않고 닫으시겠습니까?\n이 작업은 되돌릴 수 없습니다.", "ref": "Close without saving your changes?\nThis cannot be undone."}
+{"id": "screen-kor-003", "set": "screen", "lang": "kor", "category": "ui", "src": "본인 인증 후 이용하실 수 있습니다.", "ref": "You can use this after verifying your identity."}
+{"id": "screen-kor-004", "set": "screen", "lang": "kor", "category": "ui", "src": "앱을 최신 버전으로 업데이트해 주세요.", "ref": "Please update the app to the latest version."}
+{"id": "screen-kor-005", "set": "screen", "lang": "kor", "category": "menu", "src": "접근성\n캐시 삭제\n기기 관리", "ref": "Accessibility\nClear cache\nManage devices"}
+{"id": "screen-kor-006", "set": "screen", "lang": "kor", "category": "menu", "src": "홈  즐겨찾기  다운로드  마이페이지", "ref": "Home  Favorites  Downloads  My Page"}
+{"id": "screen-kor-007", "set": "screen", "lang": "kor", "category": "menu", "src": "언어 및 지역\n알림 설정\n저장 공간\n앱 정보", "ref": "Language & Region\nNotification Settings\nStorage\nApp Info"}
+{"id": "screen-kor-008", "set": "screen", "lang": "kor", "category": "menu", "src": "게스트로 계속하기\n계정 만들기\n로그인", "ref": "Continue as guest\nCreate account\nLog in"}
+{"id": "screen-kor-009", "set": "screen", "lang": "kor", "category": "error", "src": "오류가 발생했습니다(코드: E-4021). 잠시 후 다시 시도해 주세요.", "ref": "An error occurred (code: E-4021). Please try again shortly."}
+{"id": "screen-kor-010", "set": "screen", "lang": "kor", "category": "error", "src": "{filename} 파일을 열 수 없습니다. 파일이 손상되었을 수 있습니다.", "ref": "Cannot open {filename}. The file may be corrupted."}
+{"id": "screen-kor-011", "set": "screen", "lang": "kor", "category": "error", "src": "이미 가입된 이메일 주소입니다.", "ref": "This email address is already registered."}
+{"id": "screen-kor-012", "set": "screen", "lang": "kor", "category": "error", "src": "저장 공간이 부족합니다 (필요: 4.2GB / 남은 용량: 1.1GB)", "ref": "Not enough storage (required: 4.2 GB / remaining: 1.1 GB)"}
+{"id": "screen-kor-013", "set": "screen", "lang": "kor", "category": "game", "src": "어이, 꼬마. 그 검은 어디서 났냐? 우리 가문에 전해 내려오는 보검이다.", "ref": "Hey, kid. Where did you get that sword? That's a treasured blade handed down in my family."}
+{"id": "screen-kor-014", "set": "screen", "lang": "kor", "category": "game", "src": "체력이 45 회복되었다!", "ref": "Recovered 45 HP!"}
+{"id": "screen-kor-015", "set": "screen", "lang": "kor", "category": "game", "src": "미믹이었다!\n용사는 120의 피해를 입었다!", "ref": "It was a mimic!\nThe hero took 120 damage!"}
+{"id": "screen-kor-016", "set": "screen", "lang": "kor", "category": "game", "src": "마법사가 파티에 합류했다!\n레벨이 8로 올랐다!", "ref": "A mage joined the party!\nLevel went up to 8!"}
+{"id": "screen-kor-017", "set": "screen", "lang": "kor", "category": "chat", "src": "나 지하철 지연돼서 10분쯤 늦을 것 같아 ㅠㅠ 미안!", "ref": "My subway's delayed so I'll probably be about 10 minutes late T_T Sorry!"}
+{"id": "screen-kor-018", "set": "screen", "lang": "kor", "category": "chat", "src": "ㅇㅈ ㅋㅋㅋ 이번 화 진짜 레전드였음", "ref": "Agreed lol, this episode was legendary."}
+{"id": "screen-kor-019", "set": "screen", "lang": "kor", "category": "chat", "src": "김 과장님, 안녕하세요. 자료는 내일 오전까지 보내드리겠습니다.", "ref": "Hello Manager Kim, I'll send you the materials by tomorrow morning."}
+{"id": "screen-kor-020", "set": "screen", "lang": "kor", "category": "signage", "src": "반려동물 동반 출입을 삼가 주시기 바랍니다.", "ref": "Please refrain from bringing pets inside."}
+{"id": "screen-kor-021", "set": "screen", "lang": "kor", "category": "signage", "src": "전 품목 25% 할인 (12월 25일까지)", "ref": "25% off all items (through December 25)"}
+{"id": "screen-kor-022", "set": "screen", "lang": "kor", "category": "signage", "src": "준비 중입니다. 잠시만 기다려 주세요.", "ref": "Getting ready to open. Please wait a moment."}
+{"id": "screen-kor-023", "set": "screen", "lang": "kor", "category": "manga", "src": "두근두근... 어떡해, 얼굴을 못 보겠어...", "ref": "Thump thump... What do I do? I can't look at their face..."}
+{"id": "screen-kor-024", "set": "screen", "lang": "kor", "category": "manga", "src": "쿠구구궁……!\n이 기운은 대체……!?", "ref": "Rumble rumble...!\nWhat on earth is this presence...!?"}
+{"id": "screen-kor-025", "set": "screen", "lang": "kor", "category": "manga", "src": "윽... 몸이 안 움직여...! 여기서 끝낼 순 없어...!", "ref": "Ugh... I can't move my body...! I can't let it end here...!"}
+{"id": "screen-fra-001", "set": "screen", "lang": "fra", "category": "ui", "src": "Cher·e·s utilisateur·rice·s, votre session a expiré. Veuillez vous reconnecter.", "ref": "Dear users, your session has expired. Please log in again."}
+{"id": "screen-fra-002", "set": "screen", "lang": "fra", "category": "ui", "src": "Annuler les modifications ?\nCette action est irréversible.", "ref": "Discard changes?\nThis action cannot be undone."}
+{"id": "screen-fra-003", "set": "screen", "lang": "fra", "category": "ui", "src": "Cette fonctionnalité n'est pas disponible sur votre appareil.", "ref": "This feature is not available on your device."}
+{"id": "screen-fra-004", "set": "screen", "lang": "fra", "category": "ui", "src": "Si vous supprimez votre compte, toutes vos données seront perdues. Voulez-vous continuer ?", "ref": "If you delete your account, all your data will be lost. Do you want to continue?"}
+{"id": "screen-fra-005", "set": "screen", "lang": "fra", "category": "menu", "src": "Accessibilité\nVider le cache\nGérer les appareils", "ref": "Accessibility\nClear cache\nManage devices"}
+{"id": "screen-fra-006", "set": "screen", "lang": "fra", "category": "menu", "src": "Accueil  Favoris  Téléchargements  Mon compte", "ref": "Home  Favorites  Downloads  My Account"}
+{"id": "screen-fra-007", "set": "screen", "lang": "fra", "category": "menu", "src": "Langue et région\nParamètres de notification\nUtilisation du stockage\nÀ propos", "ref": "Language & Region\nNotification Settings\nStorage Usage\nAbout"}
+{"id": "screen-fra-008", "set": "screen", "lang": "fra", "category": "menu", "src": "Continuer en tant qu'invité\nCréer un compte\nSe connecter", "ref": "Continue as guest\nCreate account\nLog in"}
+{"id": "screen-fra-009", "set": "screen", "lang": "fra", "category": "error", "src": "Une erreur est survenue (code : E-4021). Veuillez réessayer ultérieurement.", "ref": "An error occurred (code: E-4021). Please try again later."}
+{"id": "screen-fra-010", "set": "screen", "lang": "fra", "category": "error", "src": "Impossible d'ouvrir {filename}. Le fichier est peut-être corrompu.", "ref": "Unable to open {filename}. The file may be corrupted."}
+{"id": "screen-fra-011", "set": "screen", "lang": "fra", "category": "error", "src": "Cette adresse e-mail est déjà associée à un compte.", "ref": "This email address is already linked to an account."}
+{"id": "screen-fra-012", "set": "screen", "lang": "fra", "category": "error", "src": "Espace disque insuffisant (requis : 4,2 Go / disponible : 1,1 Go)", "ref": "Insufficient disk space (required: 4.2 GB / available: 1.1 GB)"}
+{"id": "screen-fra-013", "set": "screen", "lang": "fra", "category": "game", "src": "Vous osez vous présenter devant moi ? Gardes, saisissez-le !", "ref": "You dare appear before me? Guards, seize him!"}
+{"id": "screen-fra-014", "set": "screen", "lang": "fra", "category": "game", "src": "Vous récupérez 45 PV !", "ref": "You recover 45 HP!"}
+{"id": "screen-fra-015", "set": "screen", "lang": "fra", "category": "game", "src": "C'était un mimic !\nLe héros subit 120 points de dégâts !", "ref": "It was a mimic!\nThe hero takes 120 points of damage!"}
+{"id": "screen-fra-016", "set": "screen", "lang": "fra", "category": "game", "src": "Une magicienne rejoint l'équipe !\nNiveau 8 atteint !", "ref": "A mage joins the party!\nReached level 8!"}
+{"id": "screen-fra-017", "set": "screen", "lang": "fra", "category": "chat", "src": "Dsl, mon train a du retard, j'arrive dans 10 min max 🙏", "ref": "Sorry, my train's delayed, I'll be there in 10 min tops 🙏"}
+{"id": "screen-fra-018", "set": "screen", "lang": "fra", "category": "chat", "src": "T'as vu l'épisode d'hier ? J'en reviens pas, c'était ouf !", "ref": "Did you see yesterday's episode? I can't believe it, it was insane!"}
+{"id": "screen-fra-019", "set": "screen", "lang": "fra", "category": "chat", "src": "Bonjour Madame Durand, je vous envoie les documents d'ici demain matin.", "ref": "Hello Ms. Durand, I'll send you the documents by tomorrow morning."}
+{"id": "screen-fra-020", "set": "screen", "lang": "fra", "category": "signage", "src": "Les animaux ne sont pas admis dans l'établissement.", "ref": "Animals are not allowed in the establishment."}
+{"id": "screen-fra-021", "set": "screen", "lang": "fra", "category": "signage", "src": "-25 % sur tout le magasin jusqu'au 25 décembre", "ref": "25% off the whole store until December 25"}
+{"id": "screen-fra-022", "set": "screen", "lang": "fra", "category": "signage", "src": "Ouverture dans quelques instants. Merci de patienter.", "ref": "Opening shortly. Thank you for waiting."}
+{"id": "screen-fra-023", "set": "screen", "lang": "fra", "category": "manga", "src": "Mon cœur bat si fort… Je n'ose pas la regarder…", "ref": "My heart is pounding so hard... I don't dare look at her..."}
+{"id": "screen-fra-024", "set": "screen", "lang": "fra", "category": "manga", "src": "GRRROOOOAR !\nQu'est-ce que c'est que cette présence… ?!", "ref": "GRRROOOOAR!\nWhat is this presence...?!"}
+{"id": "screen-fra-025", "set": "screen", "lang": "fra", "category": "manga", "src": "Aïe… Je n'arrive plus à bouger… Je ne peux pas m'arrêter là…!", "ref": "Ugh... I can't move anymore... I can't stop here...!"}
+{"id": "screen-deu-001", "set": "screen", "lang": "deu", "category": "ui", "src": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.", "ref": "Your session has expired. Please log in again."}
+{"id": "screen-deu-002", "set": "screen", "lang": "deu", "category": "ui", "src": "Änderungen verwerfen?\nDieser Vorgang kann nicht rückgängig gemacht werden.", "ref": "Discard changes?\nThis action cannot be undone."}
+{"id": "screen-deu-003", "set": "screen", "lang": "deu", "category": "ui", "src": "Schalte die Benachrichtigungen ein, damit du nichts verpasst.", "ref": "Turn on notifications so you don't miss anything."}
+{"id": "screen-deu-004", "set": "screen", "lang": "deu", "category": "ui", "src": "Wenn Sie Ihr Konto löschen, gehen alle gespeicherten Daten verloren. Fortfahren?", "ref": "If you delete your account, all saved data will be lost. Continue?"}
+{"id": "screen-deu-005", "set": "screen", "lang": "deu", "category": "menu", "src": "Kontoeinstellungen\nDatenschutzeinstellungen\nGeräteverwaltung", "ref": "Account Settings\nPrivacy Settings\nDevice Management"}
+{"id": "screen-deu-006", "set": "screen", "lang": "deu", "category": "menu", "src": "Startseite  Favoriten  Downloads  Mein Profil", "ref": "Home  Favorites  Downloads  My Profile"}
+{"id": "screen-deu-007", "set": "screen", "lang": "deu", "category": "menu", "src": "Sprache und Region\nBenachrichtigungen\nSpeichernutzung\nÜber die App", "ref": "Language and Region\nNotifications\nStorage Usage\nAbout the App"}
+{"id": "screen-deu-008", "set": "screen", "lang": "deu", "category": "menu", "src": "Als Gast fortfahren\nKonto erstellen\nAnmelden", "ref": "Continue as guest\nCreate account\nSign in"}
+{"id": "screen-deu-009", "set": "screen", "lang": "deu", "category": "error", "src": "Ein Fehler ist aufgetreten (Code: E-4021). Bitte versuchen Sie es später erneut.", "ref": "An error occurred (code: E-4021). Please try again later."}
+{"id": "screen-deu-010", "set": "screen", "lang": "deu", "category": "error", "src": "{filename} konnte nicht geöffnet werden. Die Datei ist möglicherweise beschädigt.", "ref": "{filename} could not be opened. The file may be corrupted."}
+{"id": "screen-deu-011", "set": "screen", "lang": "deu", "category": "error", "src": "Der Upload ist fehlgeschlagen. Bitte laden Sie die Datei erneut\nhoch.", "ref": "The upload failed. Please upload the file again."}
+{"id": "screen-deu-012", "set": "screen", "lang": "deu", "category": "error", "src": "Nicht genügend Speicherplatz (erforderlich: 4,2 GB / verfügbar: 1,1 GB)", "ref": "Not enough storage space (required: 4.2 GB / available: 1.1 GB)"}
+{"id": "screen-deu-013", "set": "screen", "lang": "deu", "category": "game", "src": "Du wagst es, die Burg des Dämonenkönigs ohne Einladung zu betreten? Dann sollst du deine Dummheit bereuen!", "ref": "You dare enter the Demon King's castle uninvited? Then you shall regret your foolishness!"}
+{"id": "screen-deu-014", "set": "screen", "lang": "deu", "category": "game", "src": "Du erhältst 45 LP zurück!", "ref": "You recover 45 HP!"}
+{"id": "screen-deu-015", "set": "screen", "lang": "deu", "category": "game", "src": "Es war ein Mimic!\nDer Held erleidet 120 Schaden!", "ref": "It was a mimic!\nThe hero takes 120 damage!"}
+{"id": "screen-deu-016", "set": "screen", "lang": "deu", "category": "game", "src": "Eine Magierin tritt der Gruppe bei!\nStufe 8 erreicht!", "ref": "A mage joins the party!\nReached level 8!"}
+{"id": "screen-deu-017", "set": "screen", "lang": "deu", "category": "chat", "src": "Sorry, Zug hat Verspätung, bin in 10 Min. da 🙏", "ref": "Sorry, the train's delayed, I'll be there in 10 min 🙏"}
+{"id": "screen-deu-018", "set": "screen", "lang": "deu", "category": "chat", "src": "Hast du die neue Folge schon gesehen? Absoluter Wahnsinn, ich hab Gänsehaut!", "ref": "Have you seen the new episode yet? Absolutely insane, I got goosebumps!"}
+{"id": "screen-deu-019", "set": "screen", "lang": "deu", "category": "chat", "src": "Hallo Frau Schneider, die Unterlagen schicke ich Ihnen bis morgen Vormittag.", "ref": "Hello Ms. Schneider, I'll send you the documents by tomorrow morning."}
+{"id": "screen-deu-020", "set": "screen", "lang": "deu", "category": "signage", "src": "Hunde bitte an der Leine führen. Betreten der Rasenflächen verboten.", "ref": "Please keep dogs on a leash. Keep off the grass."}
+{"id": "screen-deu-021", "set": "screen", "lang": "deu", "category": "signage", "src": "25 % Rabatt auf alles – nur bis 25.12.", "ref": "25% off everything, only until Dec. 25"}
+{"id": "screen-deu-022", "set": "screen", "lang": "deu", "category": "signage", "src": "Wegen Betriebsferien vom 24.12. bis 6.1. geschlossen", "ref": "Closed for company holidays from Dec. 24 to Jan. 6"}
+{"id": "screen-deu-023", "set": "screen", "lang": "deu", "category": "manga", "src": "Mein Herz klopft wie wild … Ich traue mich nicht, sie anzusehen …", "ref": "My heart is pounding like crazy... I don't dare look at her..."}
+{"id": "screen-deu-024", "set": "screen", "lang": "deu", "category": "manga", "src": "RUMMMMS!\nWas ist das für eine Präsenz …?!", "ref": "BOOOOM!\nWhat kind of presence is this...?!"}
+{"id": "screen-deu-025", "set": "screen", "lang": "deu", "category": "manga", "src": "Verdammt … ich kann mich nicht mehr bewegen …! Hier darf es nicht enden …!", "ref": "Damn... I can't move anymore...! It can't end here...!"}
+{"id": "screen-spa-001", "set": "screen", "lang": "spa", "category": "ui", "src": "Ustedes pueden cambiar el idioma en cualquier momento desde Ajustes.", "ref": "You can change the language at any time from Settings."}
+{"id": "screen-spa-002", "set": "screen", "lang": "spa", "category": "ui", "src": "¿Descartar los cambios?\nEsta acción no se puede deshacer.", "ref": "Discard changes?\nThis action cannot be undone."}
+{"id": "screen-spa-003", "set": "screen", "lang": "spa", "category": "ui", "src": "Tu sesión ha caducado. Vuelve a iniciar sesión.", "ref": "Your session has expired. Please log in again."}
+{"id": "screen-spa-004", "set": "screen", "lang": "spa", "category": "ui", "src": "Si eliminas tu cuenta, perderás todos tus datos guardados. ¿Quieres continuar?", "ref": "If you delete your account, you will lose all your saved data. Do you want to continue?"}
+{"id": "screen-spa-005", "set": "screen", "lang": "spa", "category": "menu", "src": "Accesibilidad\nBorrar caché\nAdministrar dispositivos", "ref": "Accessibility\nClear cache\nManage devices"}
+{"id": "screen-spa-006", "set": "screen", "lang": "spa", "category": "menu", "src": "Inicio  Favoritos  Descargas  Mi perfil", "ref": "Home  Favorites  Downloads  My Profile"}
+{"id": "screen-spa-007", "set": "screen", "lang": "spa", "category": "menu", "src": "Idioma y región\nNotificaciones\nUso de almacenamiento\nAcerca de la app", "ref": "Language & Region\nNotifications\nStorage Usage\nAbout the App"}
+{"id": "screen-spa-008", "set": "screen", "lang": "spa", "category": "menu", "src": "Continuar como invitado\nCrear cuenta\nIniciar sesión", "ref": "Continue as guest\nCreate account\nLog in"}
+{"id": "screen-spa-009", "set": "screen", "lang": "spa", "category": "error", "src": "Se produjo un error (código: E-4021). Inténtalo de nuevo más tarde.", "ref": "An error occurred (code: E-4021). Please try again later."}
+{"id": "screen-spa-010", "set": "screen", "lang": "spa", "category": "error", "src": "No se pudo abrir {filename}. Es posible que el archivo esté dañado.", "ref": "Could not open {filename}. The file may be damaged."}
+{"id": "screen-spa-011", "set": "screen", "lang": "spa", "category": "error", "src": "El celular no tiene conexión a internet. Revisa tu red y vuelve a intentarlo.", "ref": "The phone has no internet connection. Check your network and try again."}
+{"id": "screen-spa-012", "set": "screen", "lang": "spa", "category": "error", "src": "Espacio insuficiente (necesario: 4,2 GB / disponible: 1,1 GB)", "ref": "Insufficient space (needed: 4.2 GB / available: 1.1 GB)"}
+{"id": "screen-spa-013", "set": "screen", "lang": "spa", "category": "game", "src": "¿Cómo os atrevéis a entrar en mi castillo, insensatos? ¡Guardias, prendedlos!", "ref": "How dare you enter my castle, fools? Guards, seize them!"}
+{"id": "screen-spa-014", "set": "screen", "lang": "spa", "category": "game", "src": "¡Recuperas 45 PS!", "ref": "You recover 45 HP!"}
+{"id": "screen-spa-015", "set": "screen", "lang": "spa", "category": "game", "src": "¡Era un mímico!\n¡El héroe recibe 120 puntos de daño!", "ref": "It was a mimic!\nThe hero takes 120 points of damage!"}
+{"id": "screen-spa-016", "set": "screen", "lang": "spa", "category": "game", "src": "¡Una maga se une al grupo!\n¡Has alcanzado el nivel 8!", "ref": "A mage joins the party!\nYou've reached level 8!"}
+{"id": "screen-spa-017", "set": "screen", "lang": "spa", "category": "chat", "src": "Ando en el camión y hay mucho tráfico, llego en 10 minutos máximo 🙏", "ref": "I'm on the bus and there's a lot of traffic, I'll be there in 10 minutes tops 🙏"}
+{"id": "screen-spa-018", "set": "screen", "lang": "spa", "category": "chat", "src": "¿¿Viste el capítulo de anoche?? ¡¿Cómo que se murió?!", "ref": "Did you watch last night's episode?? What do you mean he died?!"}
+{"id": "screen-spa-019", "set": "screen", "lang": "spa", "category": "chat", "src": "Hola, señora Gómez, le envío la documentación mañana por la mañana.", "ref": "Hello Ms. Gómez, I'll send you the documentation tomorrow morning."}
+{"id": "screen-spa-020", "set": "screen", "lang": "spa", "category": "signage", "src": "Prohibido el paso a toda persona ajena a la obra", "ref": "No entry for anyone not working on the site"}
+{"id": "screen-spa-021", "set": "screen", "lang": "spa", "category": "signage", "src": "25 % de descuento en todo hasta el 25/12", "ref": "25% off everything until 12/25"}
+{"id": "screen-spa-022", "set": "screen", "lang": "spa", "category": "signage", "src": "Cerrado por vacaciones del 24/12 al 6/1", "ref": "Closed for vacation from Dec. 24 to Jan. 6"}
+{"id": "screen-spa-023", "set": "screen", "lang": "spa", "category": "manga", "src": "Me late el corazón a mil… No me atrevo a mirarla…", "ref": "My heart is racing... I don't dare look at her..."}
+{"id": "screen-spa-024", "set": "screen", "lang": "spa", "category": "manga", "src": "¡¡GRRROAAAR!!\n¡¿Qué es esta presencia…?!", "ref": "GRRROAAAR!!\nWhat is this presence...?!"}
+{"id": "screen-spa-025", "set": "screen", "lang": "spa", "category": "manga", "src": "Maldición… ¡no puedo moverme…! ¡No puedo acabar aquí…!", "ref": "Damn... I can't move...! I can't end here...!"}

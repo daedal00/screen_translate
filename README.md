@@ -2,6 +2,8 @@
 
 Tray app: press `Ctrl/Cmd+Shift+T`, drag-select a screen region, OCR it, and translate it to English. Windows is the main target.
 
+**Live mode:** press `Ctrl/Cmd+Shift+L` (or choose **Live mode** in the tray menu) and drag-select a region to pin it. The app keeps re-reading that region and draws the translation over each line of text as it changes. Press the shortcut again to stop.
+
 ## Install
 
 Download the installer for your system from the [latest release](https://github.com/daedal00/screen_translate/releases/latest).

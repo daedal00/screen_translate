@@ -1,5 +1,6 @@
 pub mod capture;
 pub mod live;
+pub mod mode;
 pub mod ocr;
 pub mod popup;
 pub mod settings;
@@ -15,7 +16,7 @@ use std::time::{Duration, Instant};
 use image::RgbaImage;
 use tauri::{
     AppHandle, Emitter, Manager, RunEvent, State, WebviewUrl, WebviewWindow,
-    WebviewWindowBuilder, WindowEvent,
+    WebviewWindowBuilder, WindowEvent, Wry,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
 };
@@ -23,6 +24,7 @@ use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut,
 
 use capture::LogicalRect;
 use live::{ChangeGate, Fingerprint, OverlayLine};
+use mode::{Hotkey, Mode, mode_for};
 use popup::place;
 use translate::{Translation, TranslationCache, deepl::DeepL, local::Local};
 
@@ -71,6 +73,12 @@ struct Fire {
     hits: usize,
     misses: usize,
     error: Option<String>,
+}
+
+/// The two tray items whose text follows the translation mode setting.
+struct TrayItems {
+    main: MenuItem<Wry>,
+    secondary: MenuItem<Wry>,
 }
 
 struct Cache(Mutex<TranslationCache>);
@@ -122,13 +130,33 @@ struct LatestInner {
     result: Option<RegionResult>,
 }
 
+/// Sets the tray item texts from the current mode setting.
+pub(crate) fn refresh_tray(app: &AppHandle) {
+    let Some(items) = app.try_state::<TrayItems>() else { return };
+    let (main, secondary) = mode::tray_labels(settings::mode(app));
+    if let Err(e) = items.main.set_text(main).and(items.secondary.set_text(secondary)) {
+        log::warn!("refreshing tray labels failed: {e}");
+    }
+}
+
+fn run_mode(app: &AppHandle, mode: Mode) {
+    match mode {
+        Mode::Popup => start_selection(app, false),
+        Mode::Live => toggle_live(app),
+    }
+}
+
+fn run_hotkey(app: &AppHandle, hotkey: Hotkey) {
+    run_mode(app, mode_for(hotkey, settings::mode(app)));
+}
+
 fn open_settings(app: &AppHandle) -> Result<(), String> {
     if let Some(w) = app.get_webview_window("settings") {
         return w.set_focus().map_err(|e| e.to_string());
     }
     WebviewWindowBuilder::new(app, "settings", WebviewUrl::App("settings.html".into()))
         .title("Screen Translate Settings")
-        .inner_size(420.0, 440.0)
+        .inner_size(420.0, 520.0)
         .resizable(false)
         .build()
         .map(|_| ())
@@ -781,9 +809,9 @@ pub fn run() {
     #[cfg(not(target_os = "macos"))]
     let hotkey = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyT);
     #[cfg(target_os = "macos")]
-    let live_hotkey = Shortcut::new(Some(Modifiers::SUPER | Modifiers::SHIFT), Code::KeyL);
+    let secondary_hotkey = Shortcut::new(Some(Modifiers::SUPER | Modifiers::SHIFT), Code::KeyL);
     #[cfg(not(target_os = "macos"))]
-    let live_hotkey = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyL);
+    let secondary_hotkey = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyL);
 
     tauri::Builder::default()
         .manage(Active::default())
@@ -802,11 +830,8 @@ pub fn run() {
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(move |app, shortcut, event| {
                     if event.state() == ShortcutState::Pressed {
-                        if *shortcut == live_hotkey {
-                            toggle_live(app);
-                        } else {
-                            start_selection(app, false);
-                        }
+                        let hk = if *shortcut == secondary_hotkey { Hotkey::Secondary } else { Hotkey::Main };
+                        run_hotkey(app, hk);
                     }
                 })
                 .build(),
@@ -816,20 +841,22 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             app.global_shortcut().register(hotkey)?;
-            app.global_shortcut().register(live_hotkey)?;
+            app.global_shortcut().register(secondary_hotkey)?;
             create_overlays(app.handle())?;
 
-            let translate = MenuItem::with_id(app, "translate", "Translate region", true, None::<&str>)?;
-            let live = MenuItem::with_id(app, "live", "Live mode", true, None::<&str>)?;
+            let (main_label, secondary_label) = mode::tray_labels(settings::mode(app.handle()));
+            let main = MenuItem::with_id(app, "main", main_label, true, None::<&str>)?;
+            let secondary = MenuItem::with_id(app, "secondary", secondary_label, true, None::<&str>)?;
             let settings = MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&translate, &live, &settings, &quit])?;
+            let menu = Menu::with_items(app, &[&main, &secondary, &settings, &quit])?;
+            app.manage(TrayItems { main, secondary });
             TrayIconBuilder::new()
                 .icon(app.default_window_icon().expect("missing default icon").clone())
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
-                    "translate" => start_selection(app, false),
-                    "live" => toggle_live(app),
+                    "main" => run_hotkey(app, Hotkey::Main),
+                    "secondary" => run_hotkey(app, Hotkey::Secondary),
                     "settings" => {
                         if let Err(e) = open_settings(app) {
                             log::error!("open settings failed: {e}");

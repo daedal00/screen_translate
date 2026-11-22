@@ -124,11 +124,12 @@ fn recommend_cpu_only_16gb() {
     let b = budget(&Hardware { gpu: None, ram: 16 * GIB, unified: false });
     // total 8 GiB = 8.59 GB; s5 (6.5) and below fit; s9 (10.5) does not
     let r = recommend(&sample(), &b, 10);
-    assert_eq!(ids(&r), vec!["s5", "s4", "s2"]);
+    // CPU only: smaller is faster, so the smallest comes first
+    assert_eq!(ids(&r), vec!["s2", "s4", "s5"]);
     assert!(r.iter().all(|x| x.fit == Fit::Partial));
-    assert_eq!(r[0].badges, vec!["Best quality", "Runs on CPU, slower"]);
+    assert_eq!(r[0].badges, vec!["Fastest", "Runs on CPU, slower"]);
     assert_eq!(r[1].badges, vec!["Runs on CPU, slower"]);
-    assert_eq!(r[2].badges, vec!["Fastest", "Runs on CPU, slower"]);
+    assert_eq!(r[2].badges, vec!["Best quality", "Runs on CPU, slower"]);
 }
 
 #[test]

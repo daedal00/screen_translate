@@ -45,13 +45,17 @@ pub struct Recommendation {
     pub badges: Vec<String>,
 }
 
-/// Up to `limit` entries that fit `b`: Full before Partial, larger first within each. Badges:
+/// Up to `limit` entries that fit `b`: Full before Partial, larger first within each (CPU only: smallest first). Badges:
 /// "Best quality" on the largest returned, "Fastest" on the smallest when more than one is returned,
 /// then "Fits your GPU", or "Partly on CPU, slower" (GPU present) / "Runs on CPU, slower" (none) for Partial.
 pub fn recommend(entries: &[Entry], b: &Budget, limit: usize) -> Vec<Recommendation> {
     let mut fits: Vec<(Entry, Fit)> =
         entries.iter().map(|e| (e.clone(), fit(required(e), b))).filter(|(_, f)| *f != Fit::TooBig).collect();
-    fits.sort_by_key(|(e, f)| (*f != Fit::Full, std::cmp::Reverse(e.size)));
+    if b.gpu == 0 {
+        fits.sort_by_key(|(e, _)| e.size); // CPU only: smaller is faster
+    } else {
+        fits.sort_by_key(|(e, f)| (*f != Fit::Full, std::cmp::Reverse(e.size)));
+    }
     fits.truncate(limit);
     let (largest, smallest) = (
         fits.iter().map(|(e, _)| e.size).max().unwrap_or(0),

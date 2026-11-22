@@ -157,8 +157,9 @@ fn open_settings(app: &AppHandle) -> Result<(), String> {
     }
     WebviewWindowBuilder::new(app, "settings", WebviewUrl::App("settings.html".into()))
         .title("Screen Translate Settings")
-        .inner_size(420.0, 520.0)
-        .resizable(false)
+        .inner_size(720.0, 680.0)
+        .min_inner_size(560.0, 520.0)
+        .resizable(true)
         .build()
         .map(|_| ())
         .map_err(|e| e.to_string())

@@ -46,11 +46,14 @@ The transparent selector needs Tauri's `macOSPrivateApi`, which makes the app in
 
 Pick "Local model" as the provider in Settings to translate with a local model instead of DeepL: no account or API key, and the captured text never leaves your machine. You need a few GB of free disk and memory. The app can install and run [llama.cpp](https://github.com/ggml-org/llama.cpp) for you:
 
-1. In Settings, choose provider "Local model".
-2. Under "Managed by the app", click **Install llama.cpp**. On Windows, first pick a backend: Vulkan (most GPUs, default), CPU only, or NVIDIA CUDA 12.4 (large download).
-3. Download a model: pick one from the list (Qwen2.5 3B, about 1.9 GB, fast but rougher; or Qwen2.5 7B, about 4.7 GB, recommended), or enter a custom Hugging Face `owner/repo:quant` or an https URL to a `.gguf` file.
-4. Click **Start** next to the model. When it is ready, Settings fills in the Server URL for you. Press Save.
-5. Optionally tick "Start the server when the app launches".
+1. In Settings, choose provider "Local model" on the **General** tab and press Save.
+2. Open the **Models** tab. It shows your GPU (or Apple chip) and memory, and how large a model runs fully on your GPU.
+3. If llama.cpp is missing, click **Install llama.cpp**. The app picks the right build for your GPU (CUDA for NVIDIA, Vulkan for AMD and Intel, CPU otherwise; Metal is built in on macOS). On Windows you can override it.
+4. Download one of the **Recommended for you** models, or search Hugging Face for any GGUF model and pick a quantization (each shows whether it fits your GPU). A custom `owner/repo:quant` or https `.gguf` URL is under **Advanced**.
+5. Click **Use** next to an installed model. When it is ready, the status shows how much of the model runs on the GPU, and the Server URL is filled in for you.
+6. Optionally tick "Start the server when the app launches".
+
+Large downloads use several connections in parallel and are verified with SHA-256 when Hugging Face publishes a checksum.
 
 Files live in the app data directory: `~/Library/Application Support/com.screentranslate.app/` on macOS and `%APPDATA%\com.screentranslate.app\` on Windows, in `llama/` (the runtime) and `models/`. The managed server listens only on `127.0.0.1:18080`. Port 18080 is reserved for it, so don't run your own server there. Local models are slower than DeepL; the first request after startup may be slow.
 

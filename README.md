@@ -18,6 +18,8 @@ After updating on macOS, each new version counts as a new app: remove the old Sc
 
 **Windows 10/11:** run the `_x64-setup.exe` (or the `.msi`). If SmartScreen shows "Windows protected your PC", click **More info** > **Run anyway**.
 
+**Updates:** from v0.3.1 the app updates itself. It checks for a new release at launch and every 6 hours; when one is out, the tray menu shows **Install Update vX and Restart**. You can also click **Check for Updates…** in the tray. Versions before v0.3.1 need one manual download.
+
 ## Development
 
 ```
@@ -28,6 +30,8 @@ npm run tauri dev
 ## Releasing
 
 Bump `version` in `src-tauri/tauri.conf.json` (keep `package.json` and `src-tauri/Cargo.toml` in sync) and merge to `main`. The Release workflow runs the tests, builds macOS and Windows installers into a draft release, and publishes `v<version>` once both platforms succeed. Merges that keep the version don't create a release. Use plain `MAJOR.MINOR.PATCH` versions (the Windows MSI rejects prerelease suffixes like `-beta.1`).
+
+Updates are signed with the updater key: the repo secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` must be set, and the public key in `tauri.conf.json` (`plugins.updater.pubkey`) must match it. Losing the private key means installed apps can't verify new updates, so keep a backup.
 
 If a platform build fails, the draft stays and later pushes at that version skip: re-run the failed jobs from the Actions tab, or delete the draft release and push again.
 

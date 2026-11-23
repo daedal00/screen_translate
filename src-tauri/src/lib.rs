@@ -6,6 +6,7 @@ pub mod ocr;
 pub mod popup;
 pub mod settings;
 pub mod translate;
+pub mod update;
 
 use std::collections::HashMap;
 use std::sync::{
@@ -843,6 +844,7 @@ pub fn run() {
         .manage(Http { deepl: translate::deepl::http_client(), local: translate::local::http_client() })
         .manage(Cache(Mutex::new(TranslationCache::new(256))))
         .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_log::Builder::default()
                 .level(if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info })
                 .build())
@@ -879,9 +881,12 @@ pub fn run() {
             let main = MenuItem::with_id(app, "main", main_label, true, None::<&str>)?;
             let secondary = MenuItem::with_id(app, "secondary", secondary_label, true, None::<&str>)?;
             let settings = MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
+            let updates = MenuItem::with_id(app, "update", update::UpdateState::Idle.label(), true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&main, &secondary, &settings, &quit])?;
+            let menu = Menu::with_items(app, &[&main, &secondary, &settings, &updates, &quit])?;
             app.manage(TrayItems { main, secondary });
+            app.manage(update::Updates::new(updates));
+            update::start_background_checks(app.handle());
             TrayIconBuilder::new()
                 .icon(app.default_window_icon().expect("missing default icon").clone())
                 .menu(&menu)
@@ -893,6 +898,7 @@ pub fn run() {
                             log::error!("open settings failed: {e}");
                         }
                     }
+                    "update" => update::on_click(app),
                     "quit" => app.exit(0),
                     _ => {}
                 })

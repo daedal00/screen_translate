@@ -65,7 +65,7 @@ jobs:
           BODY: |
             Download the installer for your system below.
 
-            - **macOS 13+** (Apple Silicon and Intel): the `_universal.dmg`
+            - **macOS 14+** (Apple Silicon and Intel): the `_universal.dmg`
             - **Windows 10/11**: the `_x64-setup.exe` (or the `.msi`)
 
             These builds are not code-signed yet, so your OS warns on first launch. See the README's Install section for how to open the app.

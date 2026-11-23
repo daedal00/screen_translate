@@ -174,3 +174,46 @@ fn pick_monitor_no_match() {
 fn pick_monitor_empty() {
     assert_eq!(pick_monitor(&[], (0, 0)), None);
 }
+
+/// True when at least `threshold` (0..1) of pixels have r,g,b all <= 16.
+fn mostly_black(img: &RgbaImage, threshold: f64) -> bool {
+    let total = (img.width() as u64) * (img.height() as u64);
+    if total == 0 {
+        return true;
+    }
+    let dark = img.pixels().filter(|p| p.0[..3].iter().all(|&c| c <= 16)).count() as u64;
+    dark as f64 / total as f64 >= threshold
+}
+
+#[test]
+fn mostly_black_detects_black_and_mixed() {
+    let black = RgbaImage::from_pixel(10, 10, Rgba([0, 0, 0, 255]));
+    assert!(mostly_black(&black, 0.95));
+    let mut mixed = black.clone();
+    for x in 0..10 {
+        for y in 0..5 {
+            mixed.put_pixel(x, y, Rgba([200, 180, 90, 255]));
+        }
+    }
+    assert!(!mostly_black(&mixed, 0.95));
+    assert!(mostly_black(&RgbaImage::new(0, 0), 0.95));
+}
+
+/// Manual repro: CAPTURE_RECT="x,y,w,h" (points, main display local) over a playing video.
+/// Optional CAPTURE_OUT=path.png saves the captured image.
+#[cfg(target_os = "macos")]
+#[test]
+#[ignore]
+fn video_region_is_not_black() {
+    let raw = std::env::var("CAPTURE_RECT").expect("set CAPTURE_RECT=x,y,w,h");
+    let v: Vec<f64> = raw.split(',').map(|s| s.trim().parse().unwrap()).collect();
+    let rect = lr(v[0], v[1], v[2], v[3]);
+    let img = screen_translate_lib::capture::grab_region((0, 0), rect, 1.0)
+        .expect("capture failed")
+        .expect("empty capture rect");
+    if let Ok(out) = std::env::var("CAPTURE_OUT") {
+        img.save(&out).unwrap();
+    }
+    assert!(img.width() > 0 && img.height() > 0, "empty image");
+    assert!(!mostly_black(&img, 0.95), "captured video region is almost entirely black ({}x{})", img.width(), img.height());
+}

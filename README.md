@@ -8,7 +8,7 @@ Tray app: press `Ctrl/Cmd+Shift+T`, drag-select a screen region, OCR it, and tra
 
 Download the installer for your system from the [latest release](https://github.com/daedal00/screen_translate/releases/latest).
 
-**macOS 13+ (Apple Silicon and Intel):** open the `.dmg` and drag Screen Translate to Applications. The app isn't signed with an Apple Developer ID yet, so macOS blocks the first launch. To allow it, either:
+**macOS 14+ (Apple Silicon and Intel):** open the `.dmg` and drag Screen Translate to Applications. The app isn't signed with an Apple Developer ID yet, so macOS blocks the first launch. To allow it, either:
 - try to open the app once, then (within about an hour) open System Settings > Privacy & Security and click **Open Anyway** next to the Screen Translate message, or
 - run `xattr -cr "/Applications/Screen Translate.app"` in Terminal.
 

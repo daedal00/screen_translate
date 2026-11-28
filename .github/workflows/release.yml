@@ -1,8 +1,8 @@
 name: Release
 
-# Pushing to main with a new version in src-tauri/tauri.conf.json publishes release v<version>
+# Pushing to main with a new version in crates/app/Cargo.toml publishes release v<version>
 # with macOS and Windows installers. Pushes that keep the version only run CI.
-# The release is created as a draft and published only after both platforms upload.
+# The release is created as a draft and published only after both platforms upload and latest.json validates.
 on:
   push:
     branches: [main]
@@ -28,7 +28,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name=="screen-translate").version')
           echo "version=$version" >> "$GITHUB_OUTPUT"
           if out=$(gh release view "v$version" --repo "$GITHUB_REPOSITORY" 2>&1); then
             echo "release v$version already exists (published or draft); bump the version to publish a new one"
@@ -46,11 +46,11 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.100
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
-      - run: cargo test --manifest-path src-tauri/Cargo.toml
+          workspaces: .
+      - run: cargo test --workspace
 
   create-release:
     needs: [check, test]
@@ -66,56 +66,142 @@ jobs:
             Download the installer for your system below.
 
             - **macOS 14+** (Apple Silicon and Intel): the `_universal.dmg`
-            - **Windows 10/11**: the `_x64-setup.exe` (or the `.msi`)
+            - **Windows 10/11**: the `_x64-setup.exe`
 
             These builds are not code-signed yet, so your OS warns on first launch. See the README's Install section for how to open the app.
+
+            Upgrading from v0.3.x on Windows removes the old MSI install first, which shows an admin prompt. If you decline it, the update stops and the app does not relaunch: start it manually.
         run: |
           id=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
             -f tag_name="v$VERSION" -f name="Screen Translate v$VERSION" \
             -f target_commitish="$GITHUB_SHA" -f body="$BODY" -F draft=true --jq .id)
           echo "id=$id" >> "$GITHUB_OUTPUT"
 
-  build:
-    needs: create-release
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: macos-latest
-            args: --target universal-apple-darwin
-            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
-          - platform: windows-latest
-            args: ''
-            rust-targets: ''
-    runs-on: ${{ matrix.platform }}
+  build-macos:
+    needs: [check, create-release]
+    runs-on: macos-latest
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.100
         with:
-          targets: ${{ matrix.rust-targets }}
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
-      - uses: tauri-apps/tauri-action@v0
+          workspaces: .
+      - run: packaging/macos/bundle.sh "$VERSION"
+      - name: Sign the updater tarball
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Signs the updater artifacts; tauri-action then uploads latest.json for the in-app updater.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          tar_gz=target/bundle/Screen.Translate_universal.app.tar.gz
+          npx --yes @tauri-apps/cli@2.12.6 signer sign --app-version "$VERSION" "$tar_gz"
+      # No secrets here: the example builds core's dev-dependencies (proc-macros, build scripts).
+      - name: Check the signature against the app's public key
+        run: |
+          tar_gz=target/bundle/Screen.Translate_universal.app.tar.gz
+          cargo run -q --release --target aarch64-apple-darwin -p screen-translate-core --example verify_release -- verify "$tar_gz" "$tar_gz.sig" production "$VERSION"
+      - name: Upload to the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "v$VERSION" --clobber \
+            "target/bundle/Screen.Translate_${VERSION}_universal.dmg" \
+            target/bundle/Screen.Translate_universal.app.tar.gz \
+            target/bundle/Screen.Translate_universal.app.tar.gz.sig
+      - uses: actions/upload-artifact@v7
         with:
-          releaseId: ${{ needs.create-release.outputs.id }}
-          args: ${{ matrix.args }}
-          updaterJsonPreferNsis: true
+          name: sig-macos
+          path: target/bundle/Screen.Translate_universal.app.tar.gz.sig
+
+  build-windows:
+    needs: [check, create-release]
+    runs-on: windows-latest
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@1.100
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: .
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          cargo build --release -p screen-translate
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # The exe must embed the manifest once (PerMonitorV2); a duplicate fails the link (CVT1100).
+          $mt = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\mt.exe" | Sort-Object FullName | Select-Object -Last 1
+          & $mt.FullName -inputresource:"target\release\screen-translate.exe;#1" -out:target\exe.manifest
+          if ($LASTEXITCODE -ne 0) { throw "no manifest embedded in the exe" }
+          if (-not (Select-String -Path target\exe.manifest -Pattern 'PerMonitorV2' -Quiet)) { throw "manifest lacks PerMonitorV2" }
+          $nsis = "${env:ProgramFiles(x86)}\NSIS"
+          if (-not (Test-Path "$nsis\makensis.exe")) { choco install nsis -y --no-progress }
+          New-Item -ItemType Directory -Force target\bundle | Out-Null
+          & "$nsis\makensis.exe" "/DVERSION=$env:VERSION" "/DSRC=$PWD\target\release\screen-translate.exe" "/DOUTFILE=$PWD\target\bundle\Screen.Translate_${env:VERSION}_x64-setup.exe" packaging\windows\installer.nsi
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Sign the installer
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          exe="target/bundle/Screen.Translate_${VERSION}_x64-setup.exe"
+          npx --yes @tauri-apps/cli@2.12.6 signer sign --app-version "$VERSION" "$exe"
+      # No secrets here: the example builds core's dev-dependencies (proc-macros, build scripts).
+      - name: Check the signature against the app's public key
+        shell: bash
+        run: |
+          exe="target/bundle/Screen.Translate_${VERSION}_x64-setup.exe"
+          cargo run -q --release -p screen-translate-core --example verify_release -- verify "$exe" "$exe.sig" production "$VERSION"
+      - name: Upload to the draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "v$VERSION" --clobber \
+            "target/bundle/Screen.Translate_${VERSION}_x64-setup.exe" \
+            "target/bundle/Screen.Translate_${VERSION}_x64-setup.exe.sig"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sig-windows
+          path: target/bundle/Screen.Translate_${{ needs.check.outputs.version }}_x64-setup.exe.sig
 
   publish:
-    needs: [create-release, build]
+    needs: [check, create-release, build-macos, build-windows]
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/${{ needs.create-release.outputs.id }}" -F draft=false
+      - uses: actions/download-artifact@v8
+        with:
+          path: sigs
+          merge-multiple: true
+      - name: Generate and validate latest.json
+        run: |
+          base="https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION"
+          mac_sig=$(cat sigs/Screen.Translate_universal.app.tar.gz.sig)
+          win_sig=$(cat "sigs/Screen.Translate_${VERSION}_x64-setup.exe.sig")
+          jq -n --arg v "$VERSION" --arg d "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg mu "$base/Screen.Translate_universal.app.tar.gz" --arg ms "$mac_sig" \
+            --arg wu "$base/Screen.Translate_${VERSION}_x64-setup.exe" --arg ws "$win_sig" \
+            '{version:$v, notes:"", pub_date:$d, platforms:{
+               "darwin-aarch64":{url:$mu,signature:$ms}, "darwin-x86_64":{url:$mu,signature:$ms},
+               "darwin-aarch64-app":{url:$mu,signature:$ms}, "darwin-x86_64-app":{url:$mu,signature:$ms},
+               "windows-x86_64":{url:$wu,signature:$ws}, "windows-x86_64-nsis":{url:$wu,signature:$ws},
+               "windows-x86_64-msi":{url:$wu,signature:$ws}}}' > latest.json
+          jq -e --arg v "$VERSION" '.version == $v and (.platforms | length == 7)
+            and all(.platforms[]; (.url | startswith("https://")) and (.signature | length > 0))' latest.json
+      - name: Upload latest.json and publish
+        run: |
+          gh release upload "v$VERSION" latest.json --clobber --repo "$GITHUB_REPOSITORY"
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/${{ needs.create-release.outputs.id }}" -F draft=false

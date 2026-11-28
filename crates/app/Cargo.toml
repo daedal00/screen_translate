@@ -1,0 +1,44 @@
+[package]
+name = "screen-translate"
+version = "0.4.0"
+description = "GPUI app shell of Screen Translate: tray, global hotkeys, lifecycle"
+authors = ["samuel"]
+license = "MIT"
+edition = "2024"
+
+[lib]
+name = "screen_translate_app"
+
+[[bin]]
+name = "screen-translate"
+path = "src/main.rs"
+
+[dependencies]
+screen-translate-core = { path = "../core" }
+gpui = { package = "gpui-pre", version = "=0.3.14" }
+gpui_platform = { package = "gpui-pre-platform", version = "=0.3.14", features = ["runtime_shaders", "font-kit"] }
+gpui-component = "0.11.0"
+tray-icon = "0.25.1"
+global-hotkey = "0.8"
+log = "0.4"
+fern = "0.7"
+futures = "0.3"
+tokio = { version = "1", features = ["rt-multi-thread", "time"] }
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls"] }
+raw-window-handle = "0.6"
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6.5"
+dispatch2 = "0.3.1"
+objc2-app-kit = { version = "0.3.2", features = ["NSApplication", "NSResponder", "NSEvent", "NSScreen", "NSView", "NSWindow"] }
+
+[target.'cfg(windows)'.build-dependencies]
+embed-resource = "3"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62.2", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_UI_Shell"] }
+
+[dev-dependencies]
+gpui = { package = "gpui-pre", version = "=0.3.14", features = ["test-support"] }
+tempfile = "3"

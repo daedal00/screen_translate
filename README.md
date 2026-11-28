@@ -16,22 +16,30 @@ On first use, grant Screen Recording permission when asked (System Settings > Pr
 
 After updating on macOS, each new version counts as a new app: remove the old Screen Translate entry under Screen Recording (the `-` button) and grant it again, and click **Always Allow** if macOS asks about keychain access for your DeepL key.
 
-**Windows 10/11:** run the `_x64-setup.exe` (or the `.msi`). If SmartScreen shows "Windows protected your PC", click **More info** > **Run anyway**.
+**Windows 10/11:** run the `_x64-setup.exe`. If SmartScreen shows "Windows protected your PC", click **More info** > **Run anyway**.
 
 **Updates:** from v0.3.1 the app updates itself. It checks for a new release at launch and every 6 hours; when one is out, the tray menu shows **Install Update vX and Restart**. You can also click **Check for Updates…** in the tray. Versions before v0.3.1 need one manual download.
 
 ## Development
 
+Rust only; the toolchain is pinned by `rust-toolchain.toml`.
+
 ```
-npm install
-npm run tauri dev
+cargo run -p screen-translate        # run the app
+cargo test --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+packaging/macos/bundle.sh <version>  # universal .app, updater tarball and .dmg in target/bundle (macOS)
 ```
+
+On Windows, build with `cargo build --release -p screen-translate`, then make the installer with NSIS: `makensis /DVERSION=<version> /DSRC=%CD%\target\release\screen-translate.exe /DOUTFILE=%CD%\target\bundle\setup.exe packaging\windows\installer.nsi` (absolute paths: makensis resolves them from the script directory).
+
+Debug builds read a few environment variables for testing: `ST_SELFTEST`, `ST_LIVE_SELFTEST`, `ST_OPEN_SETTINGS` and `ST_UPDATE_*` (see the `crates/app/src` sources for what each does).
 
 ## Releasing
 
-Bump `version` in `src-tauri/tauri.conf.json` (keep `package.json` and `src-tauri/Cargo.toml` in sync) and merge to `main`. The Release workflow runs the tests, builds macOS and Windows installers into a draft release, and publishes `v<version>` once both platforms succeed. Merges that keep the version don't create a release. Use plain `MAJOR.MINOR.PATCH` versions (the Windows MSI rejects prerelease suffixes like `-beta.1`).
+Bump `version` in `crates/app/Cargo.toml` (keep `crates/core/Cargo.toml` in sync) and merge to `main`. The Release workflow runs the tests, builds macOS and Windows installers into a draft release, and publishes `v<version>` once both platforms succeed. Merges that keep the version don't create a release. Use plain `MAJOR.MINOR.PATCH` versions.
 
-Updates are signed with the updater key: the repo secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` must be set, and the public key in `tauri.conf.json` (`plugins.updater.pubkey`) must match it. Losing the private key means installed apps can't verify new updates, so keep a backup.
+Updates are signed with the updater key: the repo secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` must be set, and the public key embedded in `crates/core/src/update.rs` must match it. Losing the private key means installed apps can't verify new updates, so keep a backup.
 
 If a platform build fails, the draft stays and later pushes at that version skip: re-run the failed jobs from the Actions tab, or delete the draft release and push again.
 
@@ -44,8 +52,6 @@ If a platform build fails, the draft stays and later pushes at that version skip
 
 The key is stored in the OS keychain (macOS Keychain / Windows Credential Manager), never in a file or log. **Remove key** in Settings deletes it. Unsigned macOS dev rebuilds may trigger a keychain access prompt each time.
 
-The transparent selector needs Tauri's `macOSPrivateApi`, which makes the app ineligible for the Mac App Store.
-
 ## Local model mode
 
 Pick "Local model" as the provider in Settings to translate with a local model instead of DeepL: no account or API key, and the captured text never leaves your machine. You need a few GB of free disk and memory. The app can install and run [llama.cpp](https://github.com/ggml-org/llama.cpp) for you:
@@ -53,7 +59,7 @@ Pick "Local model" as the provider in Settings to translate with a local model i
 1. In Settings, choose provider "Local model" on the **General** tab and press Save.
 2. Open the **Models** tab. It shows your GPU (or Apple chip) and memory, and how large a model runs fully on your GPU.
 3. If llama.cpp is missing, click **Install llama.cpp**. The app picks the right build for your GPU (CUDA for NVIDIA, Vulkan for AMD and Intel, CPU otherwise; Metal is built in on macOS). On Windows you can override it.
-4. Download one of the **Recommended for you** models, or search Hugging Face for any GGUF model and pick a quantization (each shows whether it fits your GPU). A custom `owner/repo:quant` or https `.gguf` URL is under **Advanced**.
+4. Download one of the **Recommended for you** models, or search Hugging Face for any GGUF model and pick a quantization (each shows whether it fits your GPU). A custom `owner/repo:quant` or https `.gguf` URL is under **Custom model**.
 5. Click **Use** next to an installed model. When it is ready, the status shows how much of the model runs on the GPU, and the Server URL is filled in for you.
 6. Optionally tick "Start the server when the app launches".
 

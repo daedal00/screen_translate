@@ -64,7 +64,7 @@ def test_app_body_temperature_is_int_zero_and_stream_false():
     assert body["temperature"] == 0 and body["stream"] is False
 
 
-# clean: ported from src-tauri/tests/local.rs clean_* tests
+# clean: ported from crates/core/tests/local.rs clean_* tests
 CLEAN_CASES = [
     ("think block", "hi", "<think>reasoning</think>\n\n Hallo", "Hallo"),
     ("unterminated think", "hi", "<think>unterminated", ""),

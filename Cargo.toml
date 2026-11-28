@@ -1,0 +1,21 @@
+[workspace]
+members = ["crates/core", "crates/app"]
+resolver = "3"
+
+# Release profile: small, fast binary.
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
+
+# Apple's strip corrupts proc-macro dylibs ("mis-aligned LINKEDIT string pool") in --target builds.
+[profile.release.build-override]
+strip = false
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.dev]
+opt-level = 1

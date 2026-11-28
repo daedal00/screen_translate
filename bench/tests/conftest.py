@@ -21,8 +21,8 @@ BENCH = Path(__file__).resolve().parents[1]
 REPO = BENCH.parent
 sys.path.insert(0, str(BENCH))
 
-LOCAL_RS = REPO / "src-tauri/src/translate/local.rs"
-MODELS_RS = REPO / "src-tauri/src/manager/models.rs"
+LOCAL_RS = REPO / "crates/core/src/translate/local.rs"
+MODELS_RS = REPO / "crates/core/src/manager/models.rs"
 
 
 @pytest.fixture(scope="session")

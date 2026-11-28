@@ -13,6 +13,8 @@ BIN=screen-translate
 
 BUILT=()
 for arch in $ARCHS; do
+  # The pinned toolchain (rust-toolchain.toml) may lack the cross target.
+  rustup target add "$arch-apple-darwin" >/dev/null
   cargo build $([ "$PROFILE" = release ] && echo --release) -p screen-translate --target "$arch-apple-darwin"
   BUILT+=("target/$arch-apple-darwin/$PROFILE/$BIN")
 done

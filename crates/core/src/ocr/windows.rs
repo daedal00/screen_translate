@@ -73,7 +73,10 @@ pub fn recognize_hinted(
     let (sw, sh) = small.dimensions();
     // OcrEngine accepts Bgra8 or Gray8, not Rgba8.
     let mut bgra = small.as_raw().clone();
-    bgra.chunks_exact_mut(4).for_each(|p| p.swap(0, 2));
+    bgra.as_chunks_mut::<4>()
+        .0
+        .iter_mut()
+        .for_each(|p| p.swap(0, 2));
     let writer = DataWriter::new().map_err(err)?;
     writer.WriteBytes(&bgra).map_err(err)?;
     let buffer = writer.DetachBuffer().map_err(err)?;

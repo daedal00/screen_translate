@@ -19,13 +19,4 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-audit
-      - run: cargo audit --file src-tauri/Cargo.lock
-
-  npm-audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: lts/*
-      - run: npm audit --audit-level=moderate
+      - run: cargo audit --file Cargo.lock

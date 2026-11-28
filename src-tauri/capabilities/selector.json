@@ -1,7 +1,0 @@
-{
-  "$schema": "../gen/schemas/desktop-schema.json",
-  "identifier": "selector",
-  "description": "Capability for the selector (listens for the reset event)",
-  "windows": ["selector"],
-  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten"]
-}

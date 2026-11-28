@@ -1,0 +1,35 @@
+{
+  "version": "0.3.1",
+  "notes": "",
+  "pub_date": "2026-11-23T07:21:30.319Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRKzdwZ0NFaTlUcE1TbStRVXp2b1B5SWVVdjQ2VkRHYnhpbkRRd2gyZC82eTMwZElFMVByWTFWcnVyZzlRU1Z6QUpjaDVITEF6MjJteGJrQlZjZURMVzdvTklNblU4MGdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1NDE4MjQ4CWZpbGU6U2NyZWVuIFRyYW5zbGF0ZV8wLjMuMV94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4zLjEKd1pnSlRZbXdEaUczR0JHRWZpOG1pOE5saEZoMWY0Y1BmRk90MXNYZWU3ZmxqMWRFb0lMNDJwNmM2TVpxUFcwaFhxOEI1ZXJZbG1Ydmt0Sk9qTmltQ1E9PQo=",
+      "url": "https://github.com/daedal00/screen_translate/releases/latest/download/Screen.Translate_0.3.1_x64-setup.exe"
+    },
+    "windows-x86_64-nsis": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRKzdwZ0NFaTlUcE1TbStRVXp2b1B5SWVVdjQ2VkRHYnhpbkRRd2gyZC82eTMwZElFMVByWTFWcnVyZzlRU1Z6QUpjaDVITEF6MjJteGJrQlZjZURMVzdvTklNblU4MGdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1NDE4MjQ4CWZpbGU6U2NyZWVuIFRyYW5zbGF0ZV8wLjMuMV94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4zLjEKd1pnSlRZbXdEaUczR0JHRWZpOG1pOE5saEZoMWY0Y1BmRk90MXNYZWU3ZmxqMWRFb0lMNDJwNmM2TVpxUFcwaFhxOEI1ZXJZbG1Ydmt0Sk9qTmltQ1E9PQo=",
+      "url": "https://github.com/daedal00/screen_translate/releases/latest/download/Screen.Translate_0.3.1_x64-setup.exe"
+    },
+    "windows-x86_64-msi": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRKzdwZ0NFaTlUcENiN1I3c3dQcjhwTjhuSEpWcFJyb21RMi9GcWF0SFNIRkhNQjNNRjQ1dmcrTFJmSi9xY3gxeldmbGltTklVbGplMkdSV2FEV1BKTXNZMmwrenhtOVE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1NDE4MjQ4CWZpbGU6U2NyZWVuIFRyYW5zbGF0ZV8wLjMuMV94NjRfZW4tVVMubXNpCXZlcnNpb246MC4zLjEKNFFTVUNGZ3pMTDloWCtVU01YTXFZeFB5VGxyUmZPOVZPUzMybDNFZTRvSnV3VERKTnhRV1JkTEtFeVVRdFU1aEZ1Mjkvc1ZwQTY2Ly9jSVU0cTBWQUE9PQo=",
+      "url": "https://github.com/daedal00/screen_translate/releases/latest/download/Screen.Translate_0.3.1_x64_en-US.msi"
+    },
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRKzdwZ0NFaTlUcE54eGxiOEFTdCtDL0ppTjM3UGZEUUdSTEZ6SCtrN3ZSekpnUjVsZEhHanZXaFFkS0g0L2tXbksxVkh5Sm5uRGRkKytWbkJUN3YwZW41Q0E0b2g4VHc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1NDE4NDg1CWZpbGU6U2NyZWVuIFRyYW5zbGF0ZS5hcHAudGFyLmd6CXZlcnNpb246MC4zLjEKdk94Z0R4L0M5V0J1QXpWSnJBaHpkeDJPUnl4NDc1VE5aYnRIVlRCMk9mb2N3Z1NLTWRUS3R1ZTJncXU3dmhNSWRQSmcwT2VzTnhWSjNVZVVxdmMyQnc9PQo=",
+      "url": "https://github.com/daedal00/screen_translate/releases/latest/download/Screen.Translate_universal.app.tar.gz"
+    },
+    "darwin-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRKzdwZ0NFaTlUcE54eGxiOEFTdCtDL0ppTjM3UGZEUUdSTEZ6SCtrN3ZSekpnUjVsZEhHanZXaFFkS0g0L2tXbksxVkh5Sm5uRGRkKytWbkJUN3YwZW41Q0E0b2g4VHc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1NDE4NDg1CWZpbGU6U2NyZWVuIFRyYW5zbGF0ZS5hcHAudGFyLmd6CXZlcnNpb246MC4zLjEKdk94Z0R4L0M5V0J1QXpWSnJBaHpkeDJPUnl4NDc1VE5aYnRIVlRCMk9mb2N3Z1NLTWRUS3R1ZTJncXU3dmhNSWRQSmcwT2VzTnhWSjNVZVVxdmMyQnc9PQo=",
+      "url": "https://github.com/daedal00/screen_translate/releases/latest/download/Screen.Translate_universal.app.tar.gz"
+    },
+    "darwin-aarch64-app": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRKzdwZ0NFaTlUcE54eGxiOEFTdCtDL0ppTjM3UGZEUUdSTEZ6SCtrN3ZSekpnUjVsZEhHanZXaFFkS0g0L2tXbksxVkh5Sm5uRGRkKytWbkJUN3YwZW41Q0E0b2g4VHc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1NDE4NDg1CWZpbGU6U2NyZWVuIFRyYW5zbGF0ZS5hcHAudGFyLmd6CXZlcnNpb246MC4zLjEKdk94Z0R4L0M5V0J1QXpWSnJBaHpkeDJPUnl4NDc1VE5aYnRIVlRCMk9mb2N3Z1NLTWRUS3R1ZTJncXU3dmhNSWRQSmcwT2VzTnhWSjNVZVVxdmMyQnc9PQo=",
+      "url": "https://github.com/daedal00/screen_translate/releases/latest/download/Screen.Translate_universal.app.tar.gz"
+    },
+    "darwin-x86_64-app": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRKzdwZ0NFaTlUcE54eGxiOEFTdCtDL0ppTjM3UGZEUUdSTEZ6SCtrN3ZSekpnUjVsZEhHanZXaFFkS0g0L2tXbksxVkh5Sm5uRGRkKytWbkJUN3YwZW41Q0E0b2g4VHc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1NDE4NDg1CWZpbGU6U2NyZWVuIFRyYW5zbGF0ZS5hcHAudGFyLmd6CXZlcnNpb246MC4zLjEKdk94Z0R4L0M5V0J1QXpWSnJBaHpkeDJPUnl4NDc1VE5aYnRIVlRCMk9mb2N3Z1NLTWRUS3R1ZTJncXU3dmhNSWRQSmcwT2VzTnhWSjNVZVVxdmMyQnc9PQo=",
+      "url": "https://github.com/daedal00/screen_translate/releases/latest/download/Screen.Translate_universal.app.tar.gz"
+    }
+  }
+}

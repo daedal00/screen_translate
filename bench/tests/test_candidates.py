@@ -1,9 +1,12 @@
 import dataclasses
-import re
+import json
 
 import pytest
 
 import run
+from conftest import REPO
+
+CATALOG_JSON = REPO / "crates/core/src/manager/catalog.json"
 
 SPEC = {
     "qwen2.5-3b": ("bartowski/Qwen2.5-3B-Instruct-GGUF", "Qwen2.5-3B-Instruct-Q4_K_M.gguf", None),
@@ -54,19 +57,15 @@ def test_candidate_is_frozen():
         run.CANDIDATES[0].key = "x"
 
 
-def test_baselines_equal_app_catalog(models_rs):
-    entries = re.findall(
-        r'id:\s*"([^"]+)".*?source:\s*"([^":]+):([^"]+)".*?size:\s*([\d_]+)', models_rs.split("CATALOG", 1)[1], re.S
-    )
-    assert len(entries) >= 2
+def test_baselines_equal_app_catalog():
+    catalog = json.loads(CATALOG_JSON.read_text(encoding="utf-8"))
+    assert len(catalog) >= 2
     by = BY_KEY()
-    for mid, repo, quant, size in entries:
-        c = by[mid]
-        assert c.repo == repo
-        assert c.quant == quant
-        assert c.kind == "baseline"
-        assert c.size_bytes == int(size.replace("_", ""))
-        assert c.file == SPEC[mid][1]
+    for e in catalog:
+        c = by[e["id"]]
+        assert c.repo == e["repo"]
+        assert c.file == e["file"]
+        assert c.size_bytes == e["size"]
 
 
 def test_native_only_on_mt_models():
@@ -122,7 +121,7 @@ def test_default_port():
     run.check_port(run.DEFAULT_PORT)
 
 
-@pytest.mark.parametrize("port", [18080, 1420])
+@pytest.mark.parametrize("port", [18080])
 def test_check_port_rejects_app_ports(port):
     with pytest.raises(ValueError):
         run.check_port(port)

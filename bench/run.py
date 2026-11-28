@@ -39,11 +39,11 @@ DATA_DIR = BENCH_DIR / "data"
 RESULTS_ROOT = BENCH_DIR / "results"
 COMET_MODEL = "Unbabel/wmt22-comet-da"
 DEFAULT_PORT = 18190
-FORBIDDEN_PORTS = (18080, 1420)  # the app's managed llama-server and the vite dev server
+FORBIDDEN_PORTS = (18080,)  # the app's managed llama-server
 APP_DIR_NAME = "com.screentranslate.app"
 
 # ---------------------------------------------------------------------------
-# App prompt parity (mirrored from src-tauri/src/translate/local.rs)
+# App prompt parity (mirrored from crates/core/src/translate/local.rs)
 # ---------------------------------------------------------------------------
 
 # mirrored from local.rs `language_name`
@@ -211,7 +211,7 @@ def server_args_for(c: Candidate, model_path: str, port: int) -> list[str]:
 
 
 def check_port(port: int) -> None:
-    """Rejects 18080 and 1420 with ValueError."""
+    """Rejects 18080 (the app's managed llama-server) with ValueError."""
     if port in FORBIDDEN_PORTS:
         raise ValueError(f"port {port} is used by the app; pick another")
 

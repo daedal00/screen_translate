@@ -24,7 +24,7 @@ futures-util = { version = "0.3", default-features = false, features = ["alloc"]
 tokio = { version = "1", features = ["time", "rt"] }
 minisign-verify = "0.3"
 semver = "1"
-base64 = "0.22"
+base64 = "0.23"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 flate2 = "1"

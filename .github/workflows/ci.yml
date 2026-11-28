@@ -19,6 +19,7 @@ jobs:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@1.100
         with:
+          components: clippy, rustfmt
           targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
       - uses: Swatinem/rust-cache@v2
         with:

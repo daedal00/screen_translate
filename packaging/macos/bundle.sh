@@ -12,12 +12,15 @@ ARCHS=${ARCHS:-"aarch64 x86_64"}
 BIN=screen-translate
 
 BUILT=()
+TARGETS=()
 for arch in $ARCHS; do
   # The pinned toolchain (rust-toolchain.toml) may lack the cross target.
   rustup target add "$arch-apple-darwin" >/dev/null
-  cargo build $([ "$PROFILE" = release ] && echo --release) -p screen-translate --target "$arch-apple-darwin"
+  TARGETS+=(--target "$arch-apple-darwin")
   BUILT+=("target/$arch-apple-darwin/$PROFILE/$BIN")
 done
+# One invocation builds all targets in parallel.
+cargo build $([ "$PROFILE" = release ] && echo --release) -p screen-translate "${TARGETS[@]}"
 
 rm -rf "$OUT"
 mkdir -p "$OUT/$APP/Contents/MacOS" "$OUT/$APP/Contents/Resources"

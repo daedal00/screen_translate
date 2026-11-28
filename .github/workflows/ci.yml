@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.100
+      - uses: dtolnay/rust-toolchain@1.120
         with:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
@@ -60,7 +60,7 @@ jobs:
               | grep -qE '^(packaging/|crates/app/(build\.rs|icon\.rc|Cargo\.toml)|Cargo\.(toml|lock)|rust-toolchain\.toml|\.github/workflows/)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
-      - uses: dtolnay/rust-toolchain@1.100
+      - uses: dtolnay/rust-toolchain@1.120
         if: steps.pkg.outputs.run == 'true'
         with:
           targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}

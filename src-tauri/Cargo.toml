@@ -33,7 +33,7 @@ keyring = { version = "3", features = ["apple-native", "windows-native"] }
 reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json"] }
 serde_json = "1"
 # SHA-256 verification of downloaded llama.cpp archives (already in the lockfile via tauri).
-sha2 = "0.10"
+sha2 = "0.11"
 # Parallel range downloads: FuturesUnordered and the cancel/progress tick (both already in the lockfile via reqwest/tauri).
 futures-util = { version = "0.3", default-features = false, features = ["alloc"] }
 tokio = { version = "1", features = ["time"] }

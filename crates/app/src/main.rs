@@ -172,11 +172,11 @@ fn setup(cx: &mut App) -> Result<(), String> {
             let _ = hotkey_tx.unbounded_send(Event::Hotkey(which));
         }
     }));
-    MenuEvent::set_event_handler(Some(move |e: MenuEvent| {
+    MenuEvent::set_event_handler(Some(std::sync::Arc::new(move |e: MenuEvent| {
         if let Some(action) = shell::action_for_menu_id(e.id.as_ref()) {
             let _ = tx.unbounded_send(Event::Menu(action));
         }
-    }));
+    })));
 
     let hotkeys = GlobalHotKeyManager::new().map_err(|e| e.to_string())?;
     let warnings = shell::register_hotkeys(|k| hotkeys.register(k));

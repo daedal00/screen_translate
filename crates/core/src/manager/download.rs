@@ -42,7 +42,7 @@ pub fn sha256_file(path: &Path) -> Result<String, String> {
         }
         hasher.update(&buf[..n]);
     }
-    Ok(format!("{:x}", hasher.finalize()))
+    Ok(hex(&hasher.finalize()))
 }
 
 /// Tuning for `download_with`.
@@ -281,7 +281,7 @@ async fn stream_single(
     }
     file.flush().map_err(|e| io_err(part, e))?;
     if let Some(expected) = expected_sha256
-        && !format!("{:x}", hasher.finalize()).eq_ignore_ascii_case(expected)
+        && !hex(&hasher.finalize()).eq_ignore_ascii_case(expected)
     {
         return Err("Download failed: checksum mismatch".into());
     }
@@ -454,4 +454,8 @@ async fn try_chunk(
         return Err(fail("Download failed: incomplete chunk".into()));
     }
     Ok(())
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
 }

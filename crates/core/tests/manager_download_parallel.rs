@@ -18,7 +18,10 @@ fn body() -> Vec<u8> {
 }
 
 fn sha_hex(b: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(b))
+    Sha256::digest(b)
+        .iter()
+        .map(|x| format!("{x:02x}"))
+        .collect()
 }
 
 fn part(dest: &Path) -> PathBuf {

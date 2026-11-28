@@ -6,7 +6,7 @@ use screen_translate_core::mode::{Hotkey, Mode, tray_labels};
 use screen_translate_core::update::UpdateState;
 
 const MOD: Modifiers = if cfg!(target_os = "macos") {
-    Modifiers::SUPER
+    Modifiers::META
 } else {
     Modifiers::CONTROL
 };

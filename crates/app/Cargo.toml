@@ -18,8 +18,8 @@ screen-translate-core = { path = "../core" }
 gpui = { package = "gpui-pre", version = "=0.3.14" }
 gpui_platform = { package = "gpui-pre-platform", version = "=0.3.14", features = ["runtime_shaders", "font-kit"] }
 gpui-component = "0.11.0"
-tray-icon = "0.25.1"
-global-hotkey = "0.8"
+tray-icon = "0.27.0"
+global-hotkey = "0.10"
 log = "0.4"
 fern = "0.7"
 futures = "0.3"

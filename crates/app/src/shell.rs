@@ -39,7 +39,7 @@ pub fn menu_items(mode: Mode, update: &UpdateState) -> Vec<(&'static str, String
 }
 
 #[cfg(target_os = "macos")]
-const MOD: Modifiers = Modifiers::SUPER;
+const MOD: Modifiers = Modifiers::META;
 #[cfg(not(target_os = "macos"))]
 const MOD: Modifiers = Modifiers::CONTROL;
 
